@@ -1,0 +1,744 @@
+# API Gateway & Service Mesh Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | Traffic Management | Security Gateway
+
+## Core Purpose
+Implement intelligent API gateways, service meshes, and traffic management with rate limiting, authentication, request routing, load balancing, and observability.
+
+## Self-Improvement Engine
+```yaml
+learning_capabilities:
+  - Track traffic patterns and anomalies
+  - Learn optimal routing strategies
+  - Adapt rate limits dynamically
+  - Monitor security threats
+  - Optimize cache strategies
+```
+
+## Gateway Patterns
+
+### API Gateway Responsibilities
+- **Request Routing** (Path-based, header-based)
+- **Authentication & Authorization** (JWT, OAuth2, API Keys)
+- **Rate Limiting** (Per-user, per-IP, per-endpoint)
+- **Request/Response Transformation**
+- **Protocol Translation** (REST to gRPC, WebSocket)
+- **API Versioning**
+- **Caching**
+- **Circuit Breaking**
+- **Monitoring & Logging**
+
+## Smart API Gateway Implementation
+
+### **Kong-Based Configuration**
+```yaml
+# kong.yml - Declarative configuration
+_format_version: "3.0"
+
+services:
+  - name: user-service
+    url: http://user-service:3001
+    routes:
+      - name: user-api
+        paths:
+          - /api/users
+        methods:
+          - GET
+          - POST
+          - PATCH
+          - DELETE
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: redis
+          redis:
+            host: redis
+            port: 6379
+      
+      - name: jwt
+        config:
+          secret_is_base64: false
+          key_claim_name: kid
+      
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - https://app.example.com
+          methods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+          credentials: true
+          max_age: 3600
+      
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Version:2.0
+              - X-Request-ID:$(uuid)
+      
+      - name: response-transformer
+        config:
+          add:
+            headers:
+              - X-Response-Time:$(latency)
+      
+      - name: prometheus
+        config:
+          per_consumer: true
+
+  - name: order-service
+    url: http://order-service:3002
+    routes:
+      - name: order-api
+        paths:
+          - /api/orders
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 50
+          hour: 500
+          policy: redis
+      
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 10
+      
+      - name: response-ratelimiting
+        config:
+          limits:
+            video:
+              minute: 10
+              hour: 100
+
+  - name: payment-service
+    url: http://payment-service:3003
+    retries: 5
+    routes:
+      - name: payment-api
+        paths:
+          - /api/payments
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 20
+          hour: 200
+      
+      - name: ip-restriction
+        config:
+          allow:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+
+consumers:
+  - username: admin
+    custom_id: admin-user
+    jwt_secrets:
+      - key: admin-key
+        secret: super-secret-key
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 1000
+          hour: 10000
+
+  - username: regular-user
+    custom_id: regular-user
+    jwt_secrets:
+      - key: user-key
+        secret: user-secret-key
+
+upstreams:
+  - name: user-service-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 5
+          tcp_failures: 2
+          http_failures: 3
+      passive:
+        healthy:
+          successes: 2
+        unhealthy:
+          tcp_failures: 2
+          http_failures: 3
+    targets:
+      - target: user-service-1:3001
+        weight: 100
+      - target: user-service-2:3001
+        weight: 100
+      - target: user-service-3:3001
+        weight: 100
+```
+
+### **Custom Gateway with Node.js**
+```typescript
+import express, { Request, Response, NextFunction } from 'express';
+import httpProxy from 'http-proxy';
+import { RateLimiterRedis } from 'rate-limiter-flexible';
+import { createClient } from 'redis';
+import jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
+
+// Gateway configuration
+interface Route {
+  path: string;
+  target: string;
+  methods: string[];
+  auth?: boolean;
+  rateLimit?: {
+    points: number;
+    duration: number;
+  };
+  cache?: {
+    ttl: number;
+    methods: string[];
+  };
+  transform?: {
+    request?: (req: any) => any;
+    response?: (res: any) => any;
+  };
+}
+
+const routes: Route[] = [
+  {
+    path: '/api/users',
+    target: 'http://user-service:3001',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    auth: true,
+    rateLimit: { points: 100, duration: 60 },
+    cache: { ttl: 300, methods: ['GET'] },
+  },
+  {
+    path: '/api/orders',
+    target: 'http://order-service:3002',
+    methods: ['GET', 'POST'],
+    auth: true,
+    rateLimit: { points: 50, duration: 60 },
+  },
+  {
+    path: '/api/public',
+    target: 'http://content-service:3003',
+    methods: ['GET'],
+    rateLimit: { points: 200, duration: 60 },
+    cache: { ttl: 3600, methods: ['GET'] },
+  },
+];
+
+// Adaptive rate limiter
+class SmartRateLimiter {
+  private limiters = new Map<string, RateLimiterRedis>();
+  private redis = createClient({ url: process.env.REDIS_URL });
+  private trafficStats = new Map<string, number[]>();
+  
+  async init() {
+    await this.redis.connect();
+  }
+  
+  getLimiter(route: string, config: { points: number; duration: number }) {
+    if (this.limiters.has(route)) {
+      return this.limiters.get(route)!;
+    }
+    
+    const limiter = new RateLimiterRedis({
+      storeClient: this.redis,
+      keyPrefix: `ratelimit:${route}`,
+      points: config.points,
+      duration: config.duration,
+    });
+    
+    this.limiters.set(route, limiter);
+    return limiter;
+  }
+  
+  async consume(route: string, key: string, config: { points: number; duration: number }) {
+    const limiter = this.getLimiter(route, config);
+    
+    try {
+      const result = await limiter.consume(key);
+      this.trackUsage(route, key);
+      
+      return {
+        allowed: true,
+        remaining: result.remainingPoints,
+        reset: new Date(Date.now() + result.msBeforeNext),
+      };
+    } catch (error: any) {
+      return {
+        allowed: false,
+        remaining: 0,
+        reset: new Date(Date.now() + error.msBeforeNext),
+      };
+    }
+  }
+  
+  private trackUsage(route: string, key: string) {
+    const stats = this.trafficStats.get(`${route}:${key}`) || [];
+    stats.push(Date.now());
+    
+    // Keep last 1000 requests
+    if (stats.length > 1000) {
+      stats.shift();
+    }
+    
+    this.trafficStats.set(`${route}:${key}`, stats);
+  }
+  
+  getTrafficPattern(route: string, key: string) {
+    const stats = this.trafficStats.get(`${route}:${key}`) || [];
+    if (stats.length < 10) return 'low';
+    
+    const now = Date.now();
+    const lastMinute = stats.filter(t => now - t < 60000).length;
+    
+    if (lastMinute > 50) return 'high';
+    if (lastMinute > 20) return 'medium';
+    return 'low';
+  }
+}
+
+// Response cache
+class ResponseCache {
+  private redis = createClient({ url: process.env.REDIS_URL });
+  private hitRate = new Map<string, { hits: number; misses: number }>();
+  
+  async init() {
+    await this.redis.connect();
+  }
+  
+  private getCacheKey(req: Request): string {
+    const hash = createHash('md5')
+      .update(`${req.method}:${req.url}:${JSON.stringify(req.query)}`)
+      .digest('hex');
+    return `cache:${hash}`;
+  }
+  
+  async get(req: Request): Promise<any | null> {
+    const key = this.getCacheKey(req);
+    const cached = await this.redis.get(key);
+    
+    const stats = this.hitRate.get(req.path) || { hits: 0, misses: 0 };
+    
+    if (cached) {
+      stats.hits++;
+      this.hitRate.set(req.path, stats);
+      return JSON.parse(cached);
+    }
+    
+    stats.misses++;
+    this.hitRate.set(req.path, stats);
+    return null;
+  }
+  
+  async set(req: Request, data: any, ttl: number) {
+    const key = this.getCacheKey(req);
+    await this.redis.set(key, JSON.stringify(data), { EX: ttl });
+  }
+  
+  getCacheStats(path: string) {
+    const stats = this.hitRate.get(path);
+    if (!stats) return null;
+    
+    const total = stats.hits + stats.misses;
+    return {
+      hits: stats.hits,
+      misses: stats.misses,
+      hitRate: total > 0 ? (stats.hits / total * 100).toFixed(2) + '%' : '0%',
+    };
+  }
+}
+
+// JWT authentication
+class AuthMiddleware {
+  private secretKey = process.env.JWT_SECRET || 'your-secret-key';
+  
+  verify(token: string): any {
+    try {
+      return jwt.verify(token, this.secretKey);
+    } catch (error) {
+      throw new Error('Invalid token');
+    }
+  }
+  
+  middleware() {
+    return async (req: Request, res: Response, next: NextFunction) => {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          error: 'Missing or invalid authorization header',
+        });
+      }
+      
+      const token = authHeader.substring(7);
+      
+      try {
+        const payload = this.verify(token);
+        (req as any).user = payload;
+        next();
+      } catch (error) {
+        res.status(401).json({
+          error: 'Invalid or expired token',
+        });
+      }
+    };
+  }
+}
+
+// Smart API Gateway
+class APIGateway {
+  private app = express();
+  private proxy = httpProxy.createProxyServer({});
+  private rateLimiter = new SmartRateLimiter();
+  private cache = new ResponseCache();
+  private auth = new AuthMiddleware();
+  
+  async init() {
+    await this.rateLimiter.init();
+    await this.cache.init();
+    
+    // Middleware
+    this.app.use(express.json());
+    this.app.use(this.requestLogger);
+    this.app.use(this.addHeaders);
+    
+    // Setup routes
+    this.setupRoutes();
+    
+    // Error handling
+    this.setupErrorHandling();
+  }
+  
+  private requestLogger(req: Request, res: Response, next: NextFunction) {
+    const start = Date.now();
+    const requestId = req.headers['x-request-id'] || Date.now().toString();
+    
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log({
+        requestId,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        duration: `${duration}ms`,
+        ip: req.ip,
+      });
+    });
+    
+    next();
+  }
+  
+  private addHeaders(req: Request, res: Response, next: NextFunction) {
+    res.setHeader('X-Gateway-Version', '2.0');
+    res.setHeader('X-Request-ID', req.headers['x-request-id'] || Date.now().toString());
+    next();
+  }
+  
+  private setupRoutes() {
+    // Health check
+    this.app.get('/health', (req, res) => {
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+    });
+    
+    // Gateway stats
+    this.app.get('/stats', async (req, res) => {
+      const cacheStats = routes
+        .filter(r => r.cache)
+        .map(r => ({
+          path: r.path,
+          stats: this.cache.getCacheStats(r.path),
+        }));
+      
+      res.json({
+        cache: cacheStats,
+        timestamp: new Date().toISOString(),
+      });
+    });
+    
+    // Dynamic route setup
+    routes.forEach(route => {
+      route.methods.forEach(method => {
+        const handler = async (req: Request, res: Response, next: NextFunction) => {
+          try {
+            // Rate limiting
+            if (route.rateLimit) {
+              const key = (req as any).user?.id || req.ip;
+              const result = await this.rateLimiter.consume(
+                route.path,
+                key,
+                route.rateLimit
+              );
+              
+              res.setHeader('X-RateLimit-Remaining', result.remaining.toString());
+              res.setHeader('X-RateLimit-Reset', result.reset.toISOString());
+              
+              if (!result.allowed) {
+                return res.status(429).json({
+                  error: 'Rate limit exceeded',
+                  retryAfter: result.reset,
+                });
+              }
+            }
+            
+            // Cache check (GET only)
+            if (route.cache && method === 'GET') {
+              const cached = await this.cache.get(req);
+              if (cached) {
+                res.setHeader('X-Cache', 'HIT');
+                return res.json(cached);
+              }
+              res.setHeader('X-Cache', 'MISS');
+            }
+            
+            // Proxy request
+            this.proxy.web(req, res, {
+              target: route.target,
+              changeOrigin: true,
+            }, (error) => {
+              next(error);
+            });
+            
+            // Cache response
+            if (route.cache && method === 'GET') {
+              this.proxy.once('proxyRes', (proxyRes, req, res) => {
+                let body = '';
+                proxyRes.on('data', (chunk) => {
+                  body += chunk;
+                });
+                proxyRes.on('end', async () => {
+                  try {
+                    const data = JSON.parse(body);
+                    await this.cache.set(req as Request, data, route.cache!.ttl);
+                  } catch (error) {
+                    console.error('Cache error:', error);
+                  }
+                });
+              });
+            }
+          } catch (error) {
+            next(error);
+          }
+        };
+        
+        const middlewares = [];
+        
+        // Add auth middleware
+        if (route.auth) {
+          middlewares.push(this.auth.middleware());
+        }
+        
+        middlewares.push(handler);
+        
+        this.app[method.toLowerCase() as 'get' | 'post' | 'patch' | 'delete'](
+          route.path + '*',
+          ...middlewares
+        );
+      });
+    });
+  }
+  
+  private setupErrorHandling() {
+    this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+      console.error('Gateway error:', err);
+      res.status(500).json({
+        error: 'Gateway error',
+        message: err.message,
+      });
+    });
+  }
+  
+  start(port: number) {
+    this.app.listen(port, () => {
+      console.log(`API Gateway listening on port ${port}`);
+    });
+  }
+}
+
+// Start gateway
+const gateway = new APIGateway();
+gateway.init().then(() => gateway.start(8080));
+```
+
+## Service Mesh (Istio)
+
+### **Virtual Service Configuration**
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: user-service
+spec:
+  hosts:
+    - user-service
+  http:
+    - match:
+        - headers:
+            x-version:
+              exact: v2
+      route:
+        - destination:
+            host: user-service
+            subset: v2
+          weight: 100
+    
+    - match:
+        - uri:
+            prefix: /api/users
+      route:
+        - destination:
+            host: user-service
+            subset: v1
+          weight: 90
+        - destination:
+            host: user-service
+            subset: v2
+          weight: 10
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,reset,connect-failure,refused-stream
+      timeout: 10s
+      
+      fault:
+        delay:
+          percentage:
+            value: 0.1
+          fixedDelay: 5s
+```
+
+### **Destination Rule**
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: user-service
+spec:
+  host: user-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    loadBalancer:
+      simple: LEAST_REQUEST
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+      trafficPolicy:
+        connectionPool:
+          tcp:
+            maxConnections: 200
+```
+
+### **Gateway (Istio)**
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: app-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+      tls:
+        httpsRedirect: true
+    
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: app-tls-secret
+      hosts:
+        - app.example.com
+```
+
+## Monitoring & Observability
+
+### **Prometheus Metrics**
+```typescript
+import { Counter, Histogram, Gauge } from 'prom-client';
+
+export const metrics = {
+  requestTotal: new Counter({
+    name: 'gateway_requests_total',
+    help: 'Total number of requests',
+    labelNames: ['method', 'path', 'status'],
+  }),
+  
+  requestDuration: new Histogram({
+    name: 'gateway_request_duration_seconds',
+    help: 'Request duration',
+    labelNames: ['method', 'path'],
+    buckets: [0.1, 0.5, 1, 2, 5],
+  }),
+  
+  activeConnections: new Gauge({
+    name: 'gateway_active_connections',
+    help: 'Number of active connections',
+  }),
+  
+  cacheHitRate: new Gauge({
+    name: 'gateway_cache_hit_rate',
+    help: 'Cache hit rate percentage',
+    labelNames: ['path'],
+  }),
+};
+```
+
+## Learning & Adaptation
+
+The skill tracks and learns from:
+- Request patterns and traffic spikes
+- Authentication failure patterns
+- Rate limit violations
+- Cache hit/miss ratios
+- Backend service health
+
+And automatically suggests:
+- Dynamic rate limit adjustments
+- Cache TTL optimizations
+- Routing rule improvements
+- Load balancing tweaks
+- Security policy updates
+
+---
+**Status:** Production Ready | Self-Improving | Traffic Optimized

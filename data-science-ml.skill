@@ -1,0 +1,666 @@
+# Data Science & ML Engineering Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | ML-Powered | Data-Driven
+
+## Core Purpose
+Build end-to-end machine learning pipelines, data analysis workflows, model training, deployment, and MLOps with production-grade practices.
+
+## Self-Improvement Engine
+```yaml
+learning_capabilities:
+  - Track model performance over time
+  - Learn from prediction errors
+  - Adapt hyperparameters automatically
+  - Optimize data pipelines
+  - Remember successful architectures
+```
+
+## Capabilities
+
+### 1. **Data Analysis & Exploration**
+### 2. **Feature Engineering**
+### 3. **Model Training & Evaluation**
+### 4. **Model Deployment & Serving**
+### 5. **MLOps & Monitoring**
+### 6. **Deep Learning (PyTorch/TensorFlow)**
+
+## Data Analysis Pipeline
+
+### **Pandas Data Processing**
+```python
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Optional
+import logging
+
+class DataProcessor:
+    """Self-optimizing data processor"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.processing_stats = {}
+    
+    def load_and_validate(
+        self,
+        file_path: str,
+        expected_columns: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        """Load data with validation"""
+        
+        # Auto-detect file type
+        if file_path.endswith('.csv'):
+            df = pd.read_csv(file_path)
+        elif file_path.endswith('.parquet'):
+            df = pd.read_parquet(file_path)
+        elif file_path.endswith('.json'):
+            df = pd.read_json(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_path}")
+        
+        self.logger.info(f"Loaded {len(df)} rows, {len(df.columns)} columns")
+        
+        # Validate columns
+        if expected_columns:
+            missing = set(expected_columns) - set(df.columns)
+            if missing:
+                raise ValueError(f"Missing columns: {missing}")
+        
+        # Basic stats
+        self.logger.info(f"Memory usage: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+        self.logger.info(f"Null values:\n{df.isnull().sum()}")
+        
+        return df
+    
+    def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Intelligent data cleaning"""
+        df = df.copy()
+        
+        # Remove duplicates
+        initial_rows = len(df)
+        df = df.drop_duplicates()
+        removed = initial_rows - len(df)
+        if removed > 0:
+            self.logger.info(f"Removed {removed} duplicate rows")
+        
+        # Handle missing values intelligently
+        for col in df.columns:
+            null_pct = df[col].isnull().sum() / len(df) * 100
+            
+            if null_pct > 50:
+                self.logger.warning(f"{col}: {null_pct:.1f}% missing - consider dropping")
+            elif null_pct > 0:
+                if df[col].dtype in ['int64', 'float64']:
+                    # Numeric: fill with median
+                    df[col].fillna(df[col].median(), inplace=True)
+                    self.logger.info(f"{col}: Filled {null_pct:.1f}% with median")
+                else:
+                    # Categorical: fill with mode or 'Unknown'
+                    if df[col].mode().empty:
+                        df[col].fillna('Unknown', inplace=True)
+                    else:
+                        df[col].fillna(df[col].mode()[0], inplace=True)
+                    self.logger.info(f"{col}: Filled {null_pct:.1f}% with mode")
+        
+        # Remove outliers (IQR method for numeric columns)
+        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+        for col in numeric_cols:
+            Q1 = df[col].quantile(0.25)
+            Q3 = df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            outliers = ((df[col] < lower_bound) | (df[col] > upper_bound)).sum()
+            if outliers > 0:
+                self.logger.info(f"{col}: Found {outliers} outliers")
+                # Cap outliers instead of removing
+                df[col] = df[col].clip(lower_bound, upper_bound)
+        
+        return df
+    
+    def feature_engineering(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Auto feature engineering"""
+        df = df.copy()
+        
+        # Datetime features
+        date_cols = df.select_dtypes(include=['datetime64']).columns
+        for col in date_cols:
+            df[f'{col}_year'] = df[col].dt.year
+            df[f'{col}_month'] = df[col].dt.month
+            df[f'{col}_day'] = df[col].dt.day
+            df[f'{col}_dayofweek'] = df[col].dt.dayofweek
+            df[f'{col}_quarter'] = df[col].dt.quarter
+            df[f'{col}_is_weekend'] = df[col].dt.dayofweek.isin([5, 6]).astype(int)
+            self.logger.info(f"Created datetime features for {col}")
+        
+        # Categorical encoding
+        cat_cols = df.select_dtypes(include=['object', 'category']).columns
+        for col in cat_cols:
+            unique_count = df[col].nunique()
+            
+            if unique_count == 2:
+                # Binary: Label encoding
+                df[f'{col}_encoded'] = pd.Categorical(df[col]).codes
+            elif unique_count < 10:
+                # Low cardinality: One-hot encoding
+                dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
+                df = pd.concat([df, dummies], axis=1)
+                self.logger.info(f"One-hot encoded {col} ({unique_count} categories)")
+            else:
+                # High cardinality: Target encoding or frequency encoding
+                freq = df[col].value_counts(normalize=True)
+                df[f'{col}_freq'] = df[col].map(freq)
+                self.logger.info(f"Frequency encoded {col} ({unique_count} categories)")
+        
+        return df
+    
+    def create_report(self, df: pd.DataFrame) -> Dict:
+        """Generate data quality report"""
+        report = {
+            'rows': len(df),
+            'columns': len(df.columns),
+            'memory_mb': df.memory_usage(deep=True).sum() / 1024**2,
+            'duplicates': df.duplicated().sum(),
+            'missing_values': df.isnull().sum().to_dict(),
+            'dtypes': df.dtypes.astype(str).to_dict(),
+            'numeric_summary': df.describe().to_dict(),
+        }
+        
+        return report
+```
+
+### **Exploratory Data Analysis**
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+class EDA:
+    """Self-improving exploratory data analysis"""
+    
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+        self.insights = []
+        
+        # Set style
+        sns.set_style('whitegrid')
+        plt.rcParams['figure.figsize'] = (12, 6)
+    
+    def analyze_distribution(self, column: str):
+        """Analyze and visualize distribution"""
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        
+        # Histogram
+        self.df[column].hist(bins=50, ax=axes[0], edgecolor='black')
+        axes[0].set_title(f'{column} - Histogram')
+        axes[0].set_xlabel(column)
+        axes[0].set_ylabel('Frequency')
+        
+        # Box plot
+        self.df.boxplot(column=column, ax=axes[1])
+        axes[1].set_title(f'{column} - Box Plot')
+        
+        # Q-Q plot
+        stats.probplot(self.df[column].dropna(), dist="norm", plot=axes[2])
+        axes[2].set_title(f'{column} - Q-Q Plot')
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # Statistical tests
+        _, p_value = stats.normaltest(self.df[column].dropna())
+        
+        insight = {
+            'column': column,
+            'mean': self.df[column].mean(),
+            'median': self.df[column].median(),
+            'std': self.df[column].std(),
+            'skew': self.df[column].skew(),
+            'kurtosis': self.df[column].kurtosis(),
+            'is_normal': p_value > 0.05,
+        }
+        
+        self.insights.append(insight)
+        return insight
+    
+    def correlation_analysis(self, target: Optional[str] = None):
+        """Correlation analysis with heatmap"""
+        numeric_df = self.df.select_dtypes(include=['int64', 'float64'])
+        
+        if len(numeric_df.columns) < 2:
+            print("Not enough numeric columns for correlation")
+            return
+        
+        corr = numeric_df.corr()
+        
+        # Heatmap
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(corr, annot=True, cmap='coolwarm', center=0, 
+                    fmt='.2f', linewidths=1)
+        plt.title('Correlation Matrix')
+        plt.tight_layout()
+        plt.show()
+        
+        if target and target in corr.columns:
+            # Target correlations
+            target_corr = corr[target].sort_values(ascending=False)
+            print(f"\nTop correlations with {target}:")
+            print(target_corr)
+            
+            return target_corr
+        
+        return corr
+    
+    def feature_importance_plot(self, importance_scores: Dict[str, float]):
+        """Visualize feature importance"""
+        features = list(importance_scores.keys())
+        scores = list(importance_scores.values())
+        
+        # Sort by importance
+        sorted_idx = np.argsort(scores)
+        features = [features[i] for i in sorted_idx]
+        scores = [scores[i] for i in sorted_idx]
+        
+        plt.figure(figsize=(10, max(6, len(features) * 0.3)))
+        plt.barh(features, scores)
+        plt.xlabel('Importance Score')
+        plt.title('Feature Importance')
+        plt.tight_layout()
+        plt.show()
+```
+
+## Machine Learning Pipeline
+
+### **Model Training Framework**
+```python
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+import joblib
+
+class MLPipeline:
+    """Self-optimizing ML pipeline"""
+    
+    def __init__(self, task_type='classification'):
+        self.task_type = task_type
+        self.models = {}
+        self.best_model = None
+        self.scaler = StandardScaler()
+        self.feature_names = None
+        
+    def prepare_data(self, X, y, test_size=0.2, random_state=42):
+        """Split and scale data"""
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
+        
+        # Store feature names
+        if hasattr(X, 'columns'):
+            self.feature_names = X.columns.tolist()
+        
+        # Scale features
+        X_train_scaled = self.scaler.fit_transform(X_train)
+        X_test_scaled = self.scaler.transform(X_test)
+        
+        print(f"Train set: {X_train_scaled.shape}")
+        print(f"Test set: {X_test_scaled.shape}")
+        print(f"Class distribution: {np.bincount(y_train)}")
+        
+        return X_train_scaled, X_test_scaled, y_train, y_test
+    
+    def train_multiple_models(self, X_train, y_train, X_test, y_test):
+        """Train and compare multiple models"""
+        
+        if self.task_type == 'classification':
+            models = {
+                'LogisticRegression': LogisticRegression(max_iter=1000, random_state=42),
+                'RandomForest': RandomForestClassifier(n_estimators=100, random_state=42),
+                'GradientBoosting': GradientBoostingClassifier(n_estimators=100, random_state=42),
+            }
+        else:
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.linear_model import Ridge
+            
+            models = {
+                'Ridge': Ridge(alpha=1.0),
+                'RandomForest': RandomForestRegressor(n_estimators=100, random_state=42),
+            }
+        
+        results = {}
+        
+        for name, model in models.items():
+            print(f"\nTraining {name}...")
+            
+            # Train
+            model.fit(X_train, y_train)
+            
+            # Cross-validation
+            cv_scores = cross_val_score(model, X_train, y_train, cv=5)
+            
+            # Test performance
+            train_score = model.score(X_train, y_train)
+            test_score = model.score(X_test, y_test)
+            
+            results[name] = {
+                'model': model,
+                'train_score': train_score,
+                'test_score': test_score,
+                'cv_mean': cv_scores.mean(),
+                'cv_std': cv_scores.std(),
+            }
+            
+            print(f"Train Score: {train_score:.4f}")
+            print(f"Test Score: {test_score:.4f}")
+            print(f"CV Score: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+        
+        # Select best model
+        best_name = max(results, key=lambda x: results[x]['test_score'])
+        self.best_model = results[best_name]['model']
+        
+        print(f"\nBest Model: {best_name}")
+        
+        self.models = results
+        return results
+    
+    def evaluate(self, X_test, y_test):
+        """Comprehensive model evaluation"""
+        if self.best_model is None:
+            raise ValueError("No model trained yet")
+        
+        y_pred = self.best_model.predict(X_test)
+        
+        if self.task_type == 'classification':
+            print("\nClassification Report:")
+            print(classification_report(y_test, y_pred))
+            
+            print("\nConfusion Matrix:")
+            cm = confusion_matrix(y_test, y_pred)
+            print(cm)
+            
+            # Visualize confusion matrix
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+            plt.title('Confusion Matrix')
+            plt.ylabel('True Label')
+            plt.xlabel('Predicted Label')
+            plt.show()
+        
+        return y_pred
+    
+    def get_feature_importance(self):
+        """Extract feature importance"""
+        if hasattr(self.best_model, 'feature_importances_'):
+            importance = self.best_model.feature_importances_
+            
+            if self.feature_names:
+                importance_dict = dict(zip(self.feature_names, importance))
+                importance_dict = dict(sorted(
+                    importance_dict.items(), 
+                    key=lambda x: x[1], 
+                    reverse=True
+                ))
+                return importance_dict
+            
+            return importance
+        
+        return None
+    
+    def save_model(self, filepath: str):
+        """Save trained model"""
+        model_data = {
+            'model': self.best_model,
+            'scaler': self.scaler,
+            'feature_names': self.feature_names,
+        }
+        joblib.dump(model_data, filepath)
+        print(f"Model saved to {filepath}")
+    
+    def load_model(self, filepath: str):
+        """Load trained model"""
+        model_data = joblib.load(filepath)
+        self.best_model = model_data['model']
+        self.scaler = model_data['scaler']
+        self.feature_names = model_data['feature_names']
+        print(f"Model loaded from {filepath}")
+```
+
+## Deep Learning (PyTorch)
+
+### **Neural Network Training**
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+
+class CustomDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = torch.FloatTensor(X)
+        self.y = torch.LongTensor(y)
+    
+    def __len__(self):
+        return len(self.X)
+    
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+class NeuralNetClassifier(nn.Module):
+    def __init__(self, input_size, hidden_sizes, num_classes, dropout=0.3):
+        super().__init__()
+        
+        layers = []
+        prev_size = input_size
+        
+        for hidden_size in hidden_sizes:
+            layers.append(nn.Linear(prev_size, hidden_size))
+            layers.append(nn.ReLU())
+            layers.append(nn.BatchNorm1d(hidden_size))
+            layers.append(nn.Dropout(dropout))
+            prev_size = hidden_size
+        
+        layers.append(nn.Linear(prev_size, num_classes))
+        
+        self.network = nn.Sequential(*layers)
+    
+    def forward(self, x):
+        return self.network(x)
+
+class Trainer:
+    def __init__(self, model, device='cuda' if torch.cuda.is_available() else 'cpu'):
+        self.model = model.to(device)
+        self.device = device
+        self.history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': []}
+    
+    def train(self, train_loader, val_loader, epochs=100, lr=0.001):
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.5, patience=5
+        )
+        
+        best_val_loss = float('inf')
+        patience_counter = 0
+        max_patience = 10
+        
+        for epoch in range(epochs):
+            # Training
+            self.model.train()
+            train_loss = 0
+            train_correct = 0
+            train_total = 0
+            
+            for X_batch, y_batch in tqdm(train_loader, desc=f'Epoch {epoch+1}/{epochs}'):
+                X_batch = X_batch.to(self.device)
+                y_batch = y_batch.to(self.device)
+                
+                optimizer.zero_grad()
+                outputs = self.model(X_batch)
+                loss = criterion(outputs, y_batch)
+                loss.backward()
+                optimizer.step()
+                
+                train_loss += loss.item()
+                _, predicted = outputs.max(1)
+                train_total += y_batch.size(0)
+                train_correct += predicted.eq(y_batch).sum().item()
+            
+            # Validation
+            val_loss, val_acc = self.evaluate(val_loader, criterion)
+            
+            # Update history
+            train_loss /= len(train_loader)
+            train_acc = 100. * train_correct / train_total
+            
+            self.history['train_loss'].append(train_loss)
+            self.history['val_loss'].append(val_loss)
+            self.history['train_acc'].append(train_acc)
+            self.history['val_acc'].append(val_acc)
+            
+            # Learning rate scheduling
+            scheduler.step(val_loss)
+            
+            print(f'Epoch {epoch+1}: Train Loss={train_loss:.4f}, Train Acc={train_acc:.2f}%, '
+                  f'Val Loss={val_loss:.4f}, Val Acc={val_acc:.2f}%')
+            
+            # Early stopping
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                patience_counter = 0
+                torch.save(self.model.state_dict(), 'best_model.pth')
+            else:
+                patience_counter += 1
+                if patience_counter >= max_patience:
+                    print(f'Early stopping at epoch {epoch+1}')
+                    break
+        
+        # Load best model
+        self.model.load_state_dict(torch.load('best_model.pth'))
+    
+    def evaluate(self, data_loader, criterion):
+        self.model.eval()
+        total_loss = 0
+        correct = 0
+        total = 0
+        
+        with torch.no_grad():
+            for X_batch, y_batch in data_loader:
+                X_batch = X_batch.to(self.device)
+                y_batch = y_batch.to(self.device)
+                
+                outputs = self.model(X_batch)
+                loss = criterion(outputs, y_batch)
+                
+                total_loss += loss.item()
+                _, predicted = outputs.max(1)
+                total += y_batch.size(0)
+                correct += predicted.eq(y_batch).sum().item()
+        
+        avg_loss = total_loss / len(data_loader)
+        accuracy = 100. * correct / total
+        
+        return avg_loss, accuracy
+    
+    def plot_history(self):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+        
+        # Loss
+        ax1.plot(self.history['train_loss'], label='Train Loss')
+        ax1.plot(self.history['val_loss'], label='Val Loss')
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Loss')
+        ax1.set_title('Training History - Loss')
+        ax1.legend()
+        
+        # Accuracy
+        ax2.plot(self.history['train_acc'], label='Train Acc')
+        ax2.plot(self.history['val_acc'], label='Val Acc')
+        ax2.set_xlabel('Epoch')
+        ax2.set_ylabel('Accuracy (%)')
+        ax2.set_title('Training History - Accuracy')
+        ax2.legend()
+        
+        plt.tight_layout()
+        plt.show()
+```
+
+## Model Deployment (FastAPI)
+
+### **ML Model Serving API**
+```python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import numpy as np
+import joblib
+
+app = FastAPI(title="ML Model API", version="1.0.0")
+
+# Load model at startup
+model_data = joblib.load('model.pkl')
+model = model_data['model']
+scaler = model_data['scaler']
+feature_names = model_data['feature_names']
+
+class PredictionRequest(BaseModel):
+    features: dict
+
+class PredictionResponse(BaseModel):
+    prediction: int
+    probability: float
+    feature_importance: dict
+
+@app.post("/predict", response_model=PredictionResponse)
+async def predict(request: PredictionRequest):
+    try:
+        # Prepare features
+        features = [request.features.get(name, 0) for name in feature_names]
+        features_array = np.array(features).reshape(1, -1)
+        
+        # Scale
+        features_scaled = scaler.transform(features_array)
+        
+        # Predict
+        prediction = model.predict(features_scaled)[0]
+        probability = model.predict_proba(features_scaled).max()
+        
+        # Feature importance
+        if hasattr(model, 'feature_importances_'):
+            importance = dict(zip(feature_names, model.feature_importances_))
+        else:
+            importance = {}
+        
+        return PredictionResponse(
+            prediction=int(prediction),
+            probability=float(probability),
+            feature_importance=importance
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "model_loaded": model is not None}
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Model performance metrics
+- Feature importance changes
+- Prediction errors
+- Data drift patterns
+- Training efficiency
+
+And automatically suggests:
+- Hyperparameter tuning
+- Feature engineering ideas
+- Model architecture improvements
+- Data quality enhancements
+- Deployment optimizations
+
+---
+**Status:** Production Ready | ML-Powered | Self-Optimizing

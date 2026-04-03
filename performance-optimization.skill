@@ -1,0 +1,687 @@
+# Performance Optimization Master Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | Performance-Critical | Benchmark-Driven
+
+## Core Purpose
+Optimize application performance across frontend, backend, database, and infrastructure with profiling, caching, lazy loading, and algorithmic improvements.
+
+## Self-Improvement Engine
+```yaml
+optimization_learning:
+  - Track performance metrics over time
+  - Learn from bottleneck patterns
+  - Adapt caching strategies
+  - Optimize based on usage patterns
+  - Remember successful optimizations
+```
+
+## Performance Areas
+
+### 1. **Frontend Performance**
+### 2. **Backend Optimization**
+### 3. **Database Query Optimization**
+### 4. **Caching Strategies**
+### 5. **Algorithm Optimization**
+### 6. **Network & CDN**
+
+## Frontend Performance
+
+### **React Performance Optimization**
+```typescript
+import React, { memo, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+// 1. Code Splitting with Lazy Loading
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+function App() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <HeavyComponent />
+    </Suspense>
+  );
+}
+
+// 2. Memoization - Prevent Unnecessary Re-renders
+const UserCard = memo(({ user }: { user: User }) => {
+  return (
+    <div className="user-card">
+      <img src={user.avatar} alt={user.name} loading="lazy" />
+      <h3>{user.name}</h3>
+      <p>{user.email}</p>
+    </div>
+  );
+});
+
+// 3. useMemo - Expensive Calculations
+function ProductList({ products }: { products: Product[] }) {
+  const sortedProducts = useMemo(() => {
+    console.log('Sorting products...');
+    return products.sort((a, b) => b.price - a.price);
+  }, [products]);
+  
+  const total = useMemo(() => {
+    return sortedProducts.reduce((sum, p) => sum + p.price, 0);
+  }, [sortedProducts]);
+  
+  return (
+    <div>
+      <p>Total: ${total}</p>
+      {sortedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+    </div>
+  );
+}
+
+// 4. useCallback - Prevent Function Recreation
+function SearchBar({ onSearch }: { onSearch: (query: string) => void }) {
+  const [query, setQuery] = useState('');
+  
+  const handleSearch = useCallback(() => {
+    onSearch(query);
+  }, [query, onSearch]);
+  
+  return (
+    <div>
+      <input value={query} onChange={e => setQuery(e.target.value)} />
+      <button onClick={handleSearch}>Search</button>
+    </div>
+  );
+}
+
+// 5. Virtual Scrolling - Large Lists
+function VirtualList({ items }: { items: any[] }) {
+  const parentRef = React.useRef<HTMLDivElement>(null);
+  
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50,
+    overscan: 5,
+  });
+  
+  return (
+    <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualizer.getVirtualItems().map(virtualItem => (
+          <div
+            key={virtualItem.index}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            {items[virtualItem.index].name}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 6. Image Optimization
+function OptimizedImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <picture>
+      <source srcSet={`${src}.webp`} type="image/webp" />
+      <source srcSet={`${src}.jpg`} type="image/jpeg" />
+      <img
+        src={`${src}.jpg`}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        width="800"
+        height="600"
+      />
+    </picture>
+  );
+}
+
+// 7. Debouncing for Search
+import { useDebouncedValue } from './hooks/useDebouncedValue';
+
+function SearchComponent() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+  
+  useEffect(() => {
+    if (debouncedSearch) {
+      // Perform search
+      fetchResults(debouncedSearch);
+    }
+  }, [debouncedSearch]);
+  
+  return (
+    <input
+      value={searchTerm}
+      onChange={e => setSearchTerm(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+
+// Custom hook for debouncing
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  
+  return debouncedValue;
+}
+```
+
+### **Web Vitals Monitoring**
+```typescript
+import { onCLS, onFID, onLCP, onFCP, onTTFB } from 'web-vitals';
+
+function sendToAnalytics(metric: any) {
+  // Send to your analytics service
+  const body = JSON.stringify(metric);
+  
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/analytics', body);
+  } else {
+    fetch('/analytics', { method: 'POST', body, keepalive: true });
+  }
+}
+
+// Track Core Web Vitals
+onCLS(sendToAnalytics);  // Cumulative Layout Shift
+onFID(sendToAnalytics);  // First Input Delay
+onLCP(sendToAnalytics);  // Largest Contentful Paint
+onFCP(sendToAnalytics);  // First Contentful Paint
+onTTFB(sendToAnalytics); // Time to First Byte
+```
+
+## Backend Performance
+
+### **Caching Strategy**
+```typescript
+import NodeCache from 'node-cache';
+import Redis from 'ioredis';
+
+// Multi-level caching
+class CacheManager {
+  private memoryCache: NodeCache;
+  private redis: Redis;
+  
+  constructor() {
+    this.memoryCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+    this.redis = new Redis(process.env.REDIS_URL);
+  }
+  
+  async get<T>(key: string): Promise<T | null> {
+    // Level 1: Memory cache (fastest)
+    const memCached = this.memoryCache.get<T>(key);
+    if (memCached) {
+      return memCached;
+    }
+    
+    // Level 2: Redis cache
+    const redisCached = await this.redis.get(key);
+    if (redisCached) {
+      const value = JSON.parse(redisCached) as T;
+      this.memoryCache.set(key, value);
+      return value;
+    }
+    
+    return null;
+  }
+  
+  async set(key: string, value: any, ttl = 300): Promise<void> {
+    const serialized = JSON.stringify(value);
+    
+    // Set in both caches
+    this.memoryCache.set(key, value, ttl);
+    await this.redis.setex(key, ttl, serialized);
+  }
+  
+  async invalidate(pattern: string): Promise<void> {
+    // Clear memory cache
+    this.memoryCache.flushAll();
+    
+    // Clear Redis keys matching pattern
+    const keys = await this.redis.keys(pattern);
+    if (keys.length > 0) {
+      await this.redis.del(...keys);
+    }
+  }
+}
+
+const cache = new CacheManager();
+
+// Cache decorator
+function Cacheable(ttl = 300) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const originalMethod = descriptor.value;
+    
+    descriptor.value = async function (...args: any[]) {
+      const cacheKey = `${propertyKey}:${JSON.stringify(args)}`;
+      
+      // Check cache
+      const cached = await cache.get(cacheKey);
+      if (cached) {
+        console.log(`Cache hit: ${cacheKey}`);
+        return cached;
+      }
+      
+      // Execute and cache
+      const result = await originalMethod.apply(this, args);
+      await cache.set(cacheKey, result, ttl);
+      
+      return result;
+    };
+    
+    return descriptor;
+  };
+}
+
+// Usage
+class UserService {
+  @Cacheable(600) // Cache for 10 minutes
+  async getUserById(id: string) {
+    return db.user.findUnique({ where: { id } });
+  }
+  
+  @Cacheable(300)
+  async getUsers(page: number) {
+    return db.user.findMany({
+      skip: (page - 1) * 10,
+      take: 10,
+    });
+  }
+}
+```
+
+### **Request Batching & DataLoader**
+```typescript
+import DataLoader from 'dataloader';
+
+// Batch database queries
+const userLoader = new DataLoader(async (ids: readonly string[]) => {
+  const users = await db.user.findMany({
+    where: { id: { in: [...ids] } },
+  });
+  
+  return ids.map(id => users.find(u => u.id === id) || null);
+}, {
+  cache: true,
+  maxBatchSize: 100,
+});
+
+// Usage in GraphQL resolver
+const resolvers = {
+  Post: {
+    author: (parent: Post) => {
+      return userLoader.load(parent.authorId); // Batched automatically
+    },
+  },
+};
+```
+
+### **Database Connection Pooling**
+```typescript
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  // Connection pool settings
+  log: ['query', 'error', 'warn'],
+});
+
+// Optimized for production
+prisma.$connect();
+
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
+```
+
+## Database Query Optimization
+
+### **Query Performance Patterns**
+```typescript
+// Bad: N+1 Problem
+async function getPostsWithAuthors() {
+  const posts = await db.post.findMany();
+  
+  for (const post of posts) {
+    post.author = await db.user.findUnique({
+      where: { id: post.authorId },
+    });
+  }
+  
+  return posts;
+}
+
+// Good: Include relations
+async function getPostsWithAuthorsOptimized() {
+  return db.post.findMany({
+    include: {
+      author: true,
+      tags: true,
+    },
+  });
+}
+
+// Better: Select only needed fields
+async function getPostsMinimal() {
+  return db.post.findMany({
+    select: {
+      id: true,
+      title: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          avatar: true,
+        },
+      },
+    },
+  });
+}
+
+// Best: Pagination + selective loading
+async function getPostsPaginated(page: number, limit: number) {
+  const [posts, total] = await Promise.all([
+    db.post.findMany({
+      select: {
+        id: true,
+        title: true,
+        excerpt: true,
+        publishedAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
+      where: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+      orderBy: {
+        publishedAt: 'desc',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    db.post.count({
+      where: {
+        status: 'PUBLISHED',
+        deletedAt: null,
+      },
+    }),
+  ]);
+  
+  return { posts, total, pages: Math.ceil(total / limit) };
+}
+```
+
+### **Database Indexing Strategy**
+```sql
+-- Index frequently queried columns
+CREATE INDEX idx_posts_author_status ON posts(author_id, status);
+CREATE INDEX idx_posts_published_at ON posts(published_at DESC);
+
+-- Composite index for common query patterns
+CREATE INDEX idx_posts_lookup ON posts(status, published_at DESC, deleted_at)
+WHERE deleted_at IS NULL;
+
+-- Full-text search index
+CREATE INDEX idx_posts_search ON posts USING gin(to_tsvector('english', title || ' ' || content));
+
+-- Analyze index usage
+SELECT
+    schemaname,
+    tablename,
+    indexname,
+    idx_scan,
+    idx_tup_read,
+    idx_tup_fetch
+FROM pg_stat_user_indexes
+ORDER BY idx_scan DESC;
+
+-- Find missing indexes
+SELECT
+    schemaname,
+    tablename,
+    attname,
+    n_distinct,
+    correlation
+FROM pg_stats
+WHERE schemaname = 'public'
+ORDER BY abs(correlation) DESC;
+```
+
+## Algorithm Optimization
+
+### **Performance-Critical Functions**
+```typescript
+// Memoization for expensive calculations
+function memoize<T extends (...args: any[]) => any>(fn: T): T {
+  const cache = new Map();
+  
+  return ((...args: any[]) => {
+    const key = JSON.stringify(args);
+    
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    
+    const result = fn(...args);
+    cache.set(key, result);
+    
+    return result;
+  }) as T;
+}
+
+// Example: Fibonacci with memoization
+const fibonacci = memoize((n: number): number => {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+});
+
+// Binary search for sorted arrays
+function binarySearch<T>(arr: T[], target: T): number {
+  let left = 0;
+  let right = arr.length - 1;
+  
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  
+  return -1;
+}
+
+// Efficient array operations
+class OptimizedArray<T> {
+  private items: T[] = [];
+  private index = new Map<any, number>();
+  
+  push(item: T, key: any) {
+    const idx = this.items.length;
+    this.items.push(item);
+    this.index.set(key, idx);
+  }
+  
+  find(key: any): T | undefined {
+    const idx = this.index.get(key);
+    return idx !== undefined ? this.items[idx] : undefined;
+  }
+  
+  remove(key: any): boolean {
+    const idx = this.index.get(key);
+    if (idx === undefined) return false;
+    
+    // Swap with last element
+    const lastIdx = this.items.length - 1;
+    if (idx !== lastIdx) {
+      this.items[idx] = this.items[lastIdx];
+      // Update index for swapped element
+    }
+    
+    this.items.pop();
+    this.index.delete(key);
+    return true;
+  }
+}
+```
+
+### **Worker Threads for CPU-Intensive Tasks**
+```typescript
+import { Worker } from 'worker_threads';
+
+// Main thread
+async function processLargeDataset(data: any[]) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker('./worker.js', {
+      workerData: data,
+    });
+    
+    worker.on('message', resolve);
+    worker.on('error', reject);
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Worker stopped with exit code ${code}`));
+      }
+    });
+  });
+}
+
+// worker.js
+const { parentPort, workerData } = require('worker_threads');
+
+function heavyComputation(data) {
+  // CPU-intensive work here
+  return data.map(item => {
+    // Complex calculations
+    return processItem(item);
+  });
+}
+
+const result = heavyComputation(workerData);
+parentPort.postMessage(result);
+```
+
+## Performance Monitoring
+
+### **APM Integration**
+```typescript
+import * as Sentry from '@sentry/node';
+import { ProfilingIntegration } from '@sentry/profiling-node';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [
+    new ProfilingIntegration(),
+  ],
+  tracesSampleRate: 0.1,
+  profilesSampleRate: 0.1,
+});
+
+// Custom performance tracking
+class PerformanceMonitor {
+  private metrics = new Map<string, number[]>();
+  
+  track(operation: string, duration: number) {
+    if (!this.metrics.has(operation)) {
+      this.metrics.set(operation, []);
+    }
+    
+    this.metrics.get(operation)!.push(duration);
+  }
+  
+  getStats(operation: string) {
+    const durations = this.metrics.get(operation) || [];
+    
+    if (durations.length === 0) return null;
+    
+    const sorted = [...durations].sort((a, b) => a - b);
+    
+    return {
+      count: durations.length,
+      min: Math.min(...durations),
+      max: Math.max(...durations),
+      avg: durations.reduce((a, b) => a + b, 0) / durations.length,
+      p50: sorted[Math.floor(sorted.length * 0.5)],
+      p95: sorted[Math.floor(sorted.length * 0.95)],
+      p99: sorted[Math.floor(sorted.length * 0.99)],
+    };
+  }
+}
+
+const perfMonitor = new PerformanceMonitor();
+
+// Measure function execution time
+async function measure<T>(
+  operation: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  const start = performance.now();
+  
+  try {
+    return await fn();
+  } finally {
+    const duration = performance.now() - start;
+    perfMonitor.track(operation, duration);
+    
+    if (duration > 1000) {
+      console.warn(`Slow operation: ${operation} took ${duration}ms`);
+    }
+  }
+}
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Response time percentiles
+- Cache hit rates
+- Database query performance
+- Memory usage patterns
+- Bundle size growth
+
+And automatically suggests:
+- Code splitting opportunities
+- Cache strategy improvements
+- Index recommendations
+- Query optimizations
+- Algorithm improvements
+
+---
+**Status:** Production Ready | Performance-Critical | Self-Optimizing

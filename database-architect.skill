@@ -1,0 +1,633 @@
+# Database Architect Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | Schema Evolution | Query Optimization
+
+## Core Purpose
+Design, optimize, and manage databases (SQL/NoSQL) with intelligent schema design, migration management, query optimization, and performance tuning.
+
+## Self-Improvement Engine
+```yaml
+learning_capabilities:
+  - Track query performance patterns
+  - Learn from index usage statistics
+  - Adapt schema suggestions based on access patterns
+  - Remember optimization decisions
+  - Evolve based on data growth patterns
+```
+
+## Database Systems Supported
+
+### SQL Databases
+- PostgreSQL (Primary)
+- MySQL/MariaDB
+- SQLite
+- Microsoft SQL Server
+
+### NoSQL Databases
+- MongoDB
+- Redis
+- DynamoDB
+- Cassandra
+
+### ORMs & Query Builders
+- Prisma (TypeScript/Node.js)
+- TypeORM
+- Sequelize
+- Mongoose (MongoDB)
+- SQLAlchemy (Python)
+- Drizzle ORM
+
+## Intelligent Schema Design
+
+### **Prisma Schema (PostgreSQL)**
+```prisma
+// Self-optimizing schema with learned patterns
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Base model with tracking
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role     @default(USER)
+  
+  // Relations
+  posts         Post[]
+  comments      Comment[]
+  profile       Profile?
+  sessions      Session[]
+  
+  // Metadata (learns importance over time)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  isActive      Boolean  @default(true)
+  
+  // Soft delete pattern
+  deletedAt     DateTime?
+  
+  @@index([email])
+  @@index([createdAt])
+  @@index([isActive, deletedAt]) // Composite for active queries
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bio         String?  @db.Text
+  avatar      String?
+  website     String?
+  location    String?
+  
+  // JSON for flexible data
+  settings    Json     @default("{}")
+  metadata    Json     @default("{}")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("profiles")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  excerpt     String?  @db.VarChar(500)
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  // Many-to-many
+  tags        Tag[]
+  comments    Comment[]
+  
+  // Status tracking
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  
+  // Analytics (updated frequently)
+  viewCount   Int      @default(0)
+  likeCount   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  
+  // Smart indexing based on query patterns
+  @@index([authorId, status, publishedAt])
+  @@index([slug])
+  @@index([publishedAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@fulltext([title, content]) // Full-text search
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  // Nested comments
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  
+  // Moderation
+  isApproved Boolean  @default(false)
+  isSpam     Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  
+  @@index([postId, isApproved, createdAt])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  
+  posts     Post[]
+  
+  // Usage tracking (for optimization)
+  useCount  Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([slug])
+  @@index([useCount(sort: Desc)]) // Popular tags
+  @@map("tags")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token        String   @unique
+  refreshToken String?  @unique
+  
+  ipAddress    String?
+  userAgent    String?  @db.Text
+  
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+  
+  @@index([userId, expiresAt])
+  @@index([token])
+  @@map("sessions")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+```
+
+### **Smart Prisma Client**
+```typescript
+import { PrismaClient } from '@prisma/client';
+
+// Self-improving client with query optimization
+class SmartPrismaClient extends PrismaClient {
+  private queryStats = new Map<string, { count: number; avgTime: number }>();
+  
+  constructor() {
+    super({
+      log: [
+        { emit: 'event', level: 'query' },
+        { emit: 'event', level: 'error' },
+      ],
+    });
+    
+    // Query performance tracking
+    this.$on('query' as never, (e: any) => {
+      const { query, duration } = e;
+      const key = query.split(' ').slice(0, 5).join(' ');
+      
+      if (this.queryStats.has(key)) {
+        const stat = this.queryStats.get(key)!;
+        stat.count++;
+        stat.avgTime = (stat.avgTime * (stat.count - 1) + duration) / stat.count;
+      } else {
+        this.queryStats.set(key, { count: 1, avgTime: duration });
+      }
+      
+      // Warn on slow queries
+      if (duration > 1000) {
+        console.warn(`Slow query detected (${duration}ms): ${query.slice(0, 100)}`);
+      }
+    });
+  }
+  
+  // Smart pagination
+  async paginatedQuery<T>(
+    model: any,
+    {
+      page = 1,
+      limit = 10,
+      orderBy,
+      where,
+    }: {
+      page?: number;
+      limit?: number;
+      orderBy?: any;
+      where?: any;
+    }
+  ) {
+    const skip = (page - 1) * limit;
+    
+    const [data, total] = await Promise.all([
+      model.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      model.count({ where }),
+    ]);
+    
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+      },
+    };
+  }
+  
+  // Batch operations with optimization
+  async batchCreate<T>(model: any, data: T[], batchSize = 100) {
+    const results = [];
+    
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const result = await model.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+      results.push(result);
+    }
+    
+    return results;
+  }
+  
+  getQueryStats() {
+    return Array.from(this.queryStats.entries())
+      .sort((a, b) => b[1].avgTime - a[1].avgTime)
+      .slice(0, 10);
+  }
+}
+
+export const db = new SmartPrismaClient();
+
+// Repository pattern with caching
+export class UserRepository {
+  private cache = new Map<string, any>();
+  
+  async findById(id: string) {
+    if (this.cache.has(id)) {
+      return this.cache.get(id);
+    }
+    
+    const user = await db.user.findUnique({
+      where: { id },
+      include: {
+        profile: true,
+        _count: {
+          select: { posts: true, comments: true },
+        },
+      },
+    });
+    
+    if (user) {
+      this.cache.set(id, user);
+    }
+    
+    return user;
+  }
+  
+  async create(data: any) {
+    const user = await db.user.create({
+      data,
+      include: { profile: true },
+    });
+    
+    this.cache.set(user.id, user);
+    return user;
+  }
+  
+  async update(id: string, data: any) {
+    const user = await db.user.update({
+      where: { id },
+      data,
+      include: { profile: true },
+    });
+    
+    this.cache.set(id, user);
+    return user;
+  }
+  
+  async softDelete(id: string) {
+    return db.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+  
+  // Complex queries
+  async getActiveUsersWithStats(limit = 10) {
+    return db.user.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+      },
+      include: {
+        _count: {
+          select: {
+            posts: { where: { status: 'PUBLISHED' } },
+            comments: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+    });
+  }
+}
+
+export const userRepository = new UserRepository();
+```
+
+### **MongoDB with Mongoose**
+```typescript
+import mongoose, { Schema, Document } from 'mongoose';
+
+// Self-optimizing schema
+interface IUser extends Document {
+  email: string;
+  passwordHash: string;
+  name: string;
+  role: 'user' | 'admin' | 'moderator';
+  profile: {
+    bio?: string;
+    avatar?: string;
+    settings: Record<string, any>;
+  };
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+}
+
+const UserSchema = new Schema<IUser>(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false, // Don't return by default
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'moderator'],
+      default: 'user',
+    },
+    profile: {
+      bio: String,
+      avatar: String,
+      settings: {
+        type: Map,
+        of: Schema.Types.Mixed,
+        default: {},
+      },
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    deletedAt: Date,
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// Indexes for performance
+UserSchema.index({ email: 1, isActive: 1 });
+UserSchema.index({ createdAt: -1 });
+UserSchema.index({ 'profile.settings.theme': 1 }); // Nested field index
+
+// Virtual fields
+UserSchema.virtual('postCount', {
+  ref: 'Post',
+  localField: '_id',
+  foreignField: 'author',
+  count: true,
+});
+
+// Methods
+UserSchema.methods.softDelete = async function() {
+  this.deletedAt = new Date();
+  this.isActive = false;
+  return this.save();
+};
+
+// Statics
+UserSchema.statics.findActive = function() {
+  return this.find({ isActive: true, deletedAt: null });
+};
+
+// Middleware
+UserSchema.pre('save', function(next) {
+  if (this.isModified('email')) {
+    this.email = this.email.toLowerCase();
+  }
+  next();
+});
+
+export const User = mongoose.model<IUser>('User', UserSchema);
+```
+
+## Migration Management
+
+### **Prisma Migrations**
+```bash
+# Create migration
+npx prisma migrate dev --name add_user_roles
+
+# Apply migrations
+npx prisma migrate deploy
+
+# Reset database (dev only)
+npx prisma migrate reset
+
+# Generate client
+npx prisma generate
+```
+
+### **Migration Best Practices**
+```prisma
+// Always use these patterns:
+// 1. Add fields as optional first
+// 2. Backfill data
+// 3. Make required in next migration
+// 4. Never rename fields directly (add new, copy data, delete old)
+```
+
+## Query Optimization Techniques
+
+### **1. N+1 Problem Solution**
+```typescript
+// Bad: N+1 queries
+const users = await db.user.findMany();
+for (const user of users) {
+  user.posts = await db.post.findMany({ where: { authorId: user.id } });
+}
+
+// Good: Single query with include
+const users = await db.user.findMany({
+  include: {
+    posts: {
+      where: { status: 'PUBLISHED' },
+      take: 5,
+    },
+  },
+});
+```
+
+### **2. Batch Loading**
+```typescript
+import DataLoader from 'dataloader';
+
+const userLoader = new DataLoader(async (ids: string[]) => {
+  const users = await db.user.findMany({
+    where: { id: { in: ids } },
+  });
+  
+  return ids.map(id => users.find(u => u.id === id));
+});
+
+// Usage
+const user = await userLoader.load('user-id');
+```
+
+### **3. Database Indexes**
+```sql
+-- Analyze query performance
+EXPLAIN ANALYZE 
+SELECT * FROM users WHERE email = 'test@example.com';
+
+-- Add index
+CREATE INDEX idx_users_email ON users(email);
+
+-- Composite index
+CREATE INDEX idx_posts_author_status ON posts(author_id, status);
+
+-- Partial index
+CREATE INDEX idx_active_users ON users(email) WHERE deleted_at IS NULL;
+```
+
+## Performance Monitoring
+
+```typescript
+// Query performance tracker
+class QueryMonitor {
+  private queries: Array<{ sql: string; duration: number }> = [];
+  
+  track(sql: string, duration: number) {
+    this.queries.push({ sql, duration });
+    
+    if (this.queries.length > 1000) {
+      this.analyze();
+      this.queries = [];
+    }
+  }
+  
+  analyze() {
+    const slow = this.queries.filter(q => q.duration > 100);
+    if (slow.length > 0) {
+      console.warn(`Found ${slow.length} slow queries`);
+      slow.forEach(q => {
+        console.log(`${q.duration}ms: ${q.sql.slice(0, 100)}`);
+      });
+    }
+  }
+}
+```
+
+## Learning & Adaptation
+
+The skill tracks and learns from:
+- Query execution times
+- Index usage statistics
+- Common query patterns
+- Join performance
+- Cache hit rates
+
+And automatically suggests:
+- Missing indexes
+- Query optimizations
+- Schema improvements
+- Caching strategies
+- Partitioning options
+
+---
+**Status:** Production Ready | Self-Optimizing | Performance-Focused

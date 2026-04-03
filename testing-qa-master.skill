@@ -1,0 +1,730 @@
+# Testing & QA Master Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | Test-Driven | Quality-Focused
+
+## Core Purpose
+Implement comprehensive testing strategies including unit tests, integration tests, E2E tests, performance tests, and test automation with intelligent coverage optimization.
+
+## Self-Improvement Engine
+```yaml
+learning_system:
+  - Track test execution patterns
+  - Learn from test failures
+  - Adapt test coverage based on bugs
+  - Optimize test suite performance
+  - Remember flaky test patterns
+```
+
+## Testing Pyramid
+
+```
+         /\
+        /E2E\          <- Few, slow, expensive
+       /------\
+      /  API  \        <- More, moderate speed
+     /--------\
+    / Unit Tests\      <- Many, fast, cheap
+   /--------------\
+```
+
+## Capabilities
+
+### 1. **Unit Testing (Jest/Vitest)**
+### 2. **Integration Testing**
+### 3. **E2E Testing (Playwright/Cypress)**
+### 4. **API Testing**
+### 5. **Performance Testing**
+### 6. **Visual Regression Testing**
+
+## Unit Testing
+
+### **Jest Configuration**
+```typescript
+// jest.config.ts
+import type { Config } from 'jest';
+
+const config: Config = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  
+  // Coverage
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/**/__tests__/**',
+  ],
+  coverageThresholds: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  
+  // Module paths
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  
+  // Setup files
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  
+  // Test match patterns
+  testMatch: [
+    '**/__tests__/**/*.test.ts',
+    '**/*.test.ts',
+  ],
+  
+  // Transform
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json',
+    }],
+  },
+  
+  // Globals
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
+  
+  // Performance
+  maxWorkers: '50%',
+  
+  // Verbose output
+  verbose: true,
+};
+
+export default config;
+```
+
+### **Comprehensive Test Examples**
+```typescript
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+
+// Unit test example
+describe('UserService', () => {
+  let userService: UserService;
+  let mockDb: jest.Mocked<PrismaClient>;
+  
+  beforeEach(() => {
+    mockDb = {
+      user: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+    } as any;
+    
+    userService = new UserService(mockDb);
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('createUser', () => {
+    it('should create a user with hashed password', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User',
+      };
+      
+      const expectedUser = {
+        id: '1',
+        email: userData.email,
+        name: userData.name,
+        passwordHash: 'hashed_password',
+        createdAt: new Date(),
+      };
+      
+      mockDb.user.create.mockResolvedValue(expectedUser as any);
+      
+      const result = await userService.createUser(userData);
+      
+      expect(result).toEqual(expectedUser);
+      expect(mockDb.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          email: userData.email,
+          name: userData.name,
+          passwordHash: expect.any(String),
+        }),
+      });
+    });
+    
+    it('should throw error if email already exists', async () => {
+      mockDb.user.create.mockRejectedValue({
+        code: 'P2002',
+        meta: { target: ['email'] },
+      });
+      
+      await expect(
+        userService.createUser({
+          email: 'existing@example.com',
+          password: 'password123',
+          name: 'Test',
+        })
+      ).rejects.toThrow('Email already exists');
+    });
+    
+    it('should validate email format', async () => {
+      await expect(
+        userService.createUser({
+          email: 'invalid-email',
+          password: 'password123',
+          name: 'Test',
+        })
+      ).rejects.toThrow('Invalid email format');
+    });
+    
+    it('should validate password length', async () => {
+      await expect(
+        userService.createUser({
+          email: 'test@example.com',
+          password: '123',
+          name: 'Test',
+        })
+      ).rejects.toThrow('Password must be at least 8 characters');
+    });
+  });
+  
+  describe('findUserById', () => {
+    it('should return user when found', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+      
+      mockDb.user.findUnique.mockResolvedValue(mockUser as any);
+      
+      const result = await userService.findUserById('1');
+      
+      expect(result).toEqual(mockUser);
+      expect(mockDb.user.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
+    });
+    
+    it('should return null when user not found', async () => {
+      mockDb.user.findUnique.mockResolvedValue(null);
+      
+      const result = await userService.findUserById('999');
+      
+      expect(result).toBeNull();
+    });
+  });
+});
+
+// React component testing
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from './LoginForm';
+
+describe('LoginForm', () => {
+  const mockOnSubmit = jest.fn();
+  
+  beforeEach(() => {
+    mockOnSubmit.mockClear();
+  });
+  
+  it('should render login form', () => {
+    render(<LoginForm onSubmit={mockOnSubmit} />);
+    
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+  });
+  
+  it('should validate email on blur', async () => {
+    render(<LoginForm onSubmit={mockOnSubmit} />);
+    
+    const emailInput = screen.getByLabelText(/email/i);
+    
+    await userEvent.type(emailInput, 'invalid-email');
+    fireEvent.blur(emailInput);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/invalid email/i)).toBeInTheDocument();
+    });
+  });
+  
+  it('should submit form with valid data', async () => {
+    render(<LoginForm onSubmit={mockOnSubmit} />);
+    
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    
+    await userEvent.click(screen.getByRole('button', { name: /login/i }));
+    
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+    });
+  });
+  
+  it('should show loading state during submission', async () => {
+    mockOnSubmit.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 1000)));
+    
+    render(<LoginForm onSubmit={mockOnSubmit} />);
+    
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    await userEvent.click(submitButton);
+    
+    expect(submitButton).toBeDisabled();
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+  });
+});
+```
+
+## Integration Testing
+
+### **API Integration Tests**
+```typescript
+import request from 'supertest';
+import { app } from '../app';
+import { db } from '../db';
+
+describe('User API Integration Tests', () => {
+  let authToken: string;
+  
+  beforeAll(async () => {
+    // Setup test database
+    await db.$connect();
+  });
+  
+  afterAll(async () => {
+    // Cleanup
+    await db.$disconnect();
+  });
+  
+  beforeEach(async () => {
+    // Clear database
+    await db.user.deleteMany();
+  });
+  
+  describe('POST /api/auth/register', () => {
+    it('should register a new user', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'newuser@example.com',
+          password: 'password123',
+          name: 'New User',
+        })
+        .expect(201);
+      
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          user: {
+            email: 'newuser@example.com',
+            name: 'New User',
+          },
+          accessToken: expect.any(String),
+          refreshToken: expect.any(String),
+        },
+      });
+      
+      // Verify user in database
+      const user = await db.user.findUnique({
+        where: { email: 'newuser@example.com' },
+      });
+      expect(user).toBeTruthy();
+    });
+    
+    it('should return 400 for invalid email', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'invalid-email',
+          password: 'password123',
+          name: 'User',
+        })
+        .expect(400);
+      
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toMatch(/email/i);
+    });
+  });
+  
+  describe('POST /api/auth/login', () => {
+    beforeEach(async () => {
+      // Create test user
+      await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+          name: 'Test User',
+        });
+    });
+    
+    it('should login with correct credentials', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+        })
+        .expect(200);
+      
+      expect(response.body.data).toHaveProperty('accessToken');
+      authToken = response.body.data.accessToken;
+    });
+    
+    it('should return 401 for wrong password', async () => {
+      await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'wrongpassword',
+        })
+        .expect(401);
+    });
+  });
+  
+  describe('GET /api/users/me', () => {
+    beforeEach(async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+          name: 'Test User',
+        });
+      
+      authToken = response.body.data.accessToken;
+    });
+    
+    it('should return current user with valid token', async () => {
+      const response = await request(app)
+        .get('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      
+      expect(response.body.data.user).toMatchObject({
+        email: 'test@example.com',
+        name: 'Test User',
+      });
+    });
+    
+    it('should return 401 without token', async () => {
+      await request(app)
+        .get('/api/users/me')
+        .expect(401);
+    });
+  });
+});
+```
+
+## E2E Testing (Playwright)
+
+### **Playwright Configuration**
+```typescript
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  
+  reporter: [
+    ['html'],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['json', { outputFile: 'test-results/results.json' }],
+  ],
+  
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+  
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 12'] },
+    },
+  ],
+  
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+### **E2E Test Examples**
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('User Authentication Flow', () => {
+  test('should complete full registration and login flow', async ({ page }) => {
+    // Navigate to registration page
+    await page.goto('/register');
+    
+    // Fill registration form
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'password123');
+    await page.fill('[name="name"]', 'Test User');
+    
+    // Submit form
+    await page.click('button[type="submit"]');
+    
+    // Should redirect to dashboard
+    await expect(page).toHaveURL('/dashboard');
+    
+    // Should see welcome message
+    await expect(page.locator('text=Welcome, Test User')).toBeVisible();
+    
+    // Logout
+    await page.click('[aria-label="User menu"]');
+    await page.click('text=Logout');
+    
+    // Should redirect to home
+    await expect(page).toHaveURL('/');
+    
+    // Login again
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    
+    // Should be back in dashboard
+    await expect(page).toHaveURL('/dashboard');
+  });
+  
+  test('should show validation errors', async ({ page }) => {
+    await page.goto('/register');
+    
+    // Submit empty form
+    await page.click('button[type="submit"]');
+    
+    // Check for validation errors
+    await expect(page.locator('text=Email is required')).toBeVisible();
+    await expect(page.locator('text=Password is required')).toBeVisible();
+    
+    // Fill invalid email
+    await page.fill('[name="email"]', 'invalid-email');
+    await page.blur('[name="email"]');
+    
+    await expect(page.locator('text=Invalid email')).toBeVisible();
+  });
+});
+
+test.describe('Post Creation Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login before each test
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/dashboard');
+  });
+  
+  test('should create a new post', async ({ page }) => {
+    // Navigate to create post
+    await page.click('text=New Post');
+    
+    // Fill post form
+    await page.fill('[name="title"]', 'My First Post');
+    await page.fill('[role="textbox"]', 'This is the content of my post');
+    
+    // Add tags
+    await page.fill('[placeholder="Add tags"]', 'tech');
+    await page.press('[placeholder="Add tags"]', 'Enter');
+    await page.fill('[placeholder="Add tags"]', 'javascript');
+    await page.press('[placeholder="Add tags"]', 'Enter');
+    
+    // Publish
+    await page.click('text=Publish');
+    
+    // Should show success message
+    await expect(page.locator('text=Post published successfully')).toBeVisible();
+    
+    // Should redirect to post page
+    await expect(page).toHaveURL(/\/posts\/.+/);
+    
+    // Verify post content
+    await expect(page.locator('h1')).toHaveText('My First Post');
+    await expect(page.locator('text=This is the content of my post')).toBeVisible();
+    await expect(page.locator('text=tech')).toBeVisible();
+    await expect(page.locator('text=javascript')).toBeVisible();
+  });
+});
+```
+
+## Performance Testing
+
+### **Load Testing with k6**
+```javascript
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Rate } from 'k6/metrics';
+
+const failureRate = new Rate('failed_requests');
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 20 },  // Ramp up
+    { duration: '1m', target: 20 },   // Stay at 20
+    { duration: '30s', target: 50 },  // Ramp to 50
+    { duration: '2m', target: 50 },   // Stay at 50
+    { duration: '30s', target: 0 },   // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
+    failed_requests: ['rate<0.1'],    // Error rate should be below 10%
+  },
+};
+
+export default function () {
+  // Login
+  const loginRes = http.post('http://localhost:3000/api/auth/login', {
+    email: 'test@example.com',
+    password: 'password123',
+  });
+  
+  check(loginRes, {
+    'login successful': (r) => r.status === 200,
+    'has token': (r) => r.json('data.accessToken') !== '',
+  }) || failureRate.add(1);
+  
+  const token = loginRes.json('data.accessToken');
+  
+  sleep(1);
+  
+  // Get posts
+  const postsRes = http.get('http://localhost:3000/api/posts', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  check(postsRes, {
+    'posts retrieved': (r) => r.status === 200,
+  }) || failureRate.add(1);
+  
+  sleep(1);
+  
+  // Create post
+  const createRes = http.post(
+    'http://localhost:3000/api/posts',
+    JSON.stringify({
+      title: 'Load Test Post',
+      content: 'This is a load test post',
+    }),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  
+  check(createRes, {
+    'post created': (r) => r.status === 201,
+  }) || failureRate.add(1);
+  
+  sleep(1);
+}
+```
+
+## Test Utilities
+
+### **Test Factories**
+```typescript
+import { faker } from '@faker-js/faker';
+
+export class UserFactory {
+  static build(overrides?: Partial<User>): User {
+    return {
+      id: faker.string.uuid(),
+      email: faker.internet.email(),
+      name: faker.person.fullName(),
+      passwordHash: faker.string.alphanumeric(60),
+      role: 'USER',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    };
+  }
+  
+  static buildMany(count: number, overrides?: Partial<User>): User[] {
+    return Array.from({ length: count }, () => this.build(overrides));
+  }
+}
+
+export class PostFactory {
+  static build(overrides?: Partial<Post>): Post {
+    return {
+      id: faker.string.uuid(),
+      title: faker.lorem.sentence(),
+      slug: faker.helpers.slugify(faker.lorem.words(3)),
+      content: faker.lorem.paragraphs(3),
+      authorId: faker.string.uuid(),
+      status: 'PUBLISHED',
+      publishedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    };
+  }
+}
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Test execution times
+- Flaky test patterns
+- Coverage gaps after bugs
+- Most valuable tests
+- Test maintenance cost
+
+And automatically suggests:
+- Test parallelization
+- Flaky test fixes
+- Coverage improvements
+- Test suite optimizations
+- Mock simplifications
+
+---
+**Status:** Production Ready | Comprehensive | Self-Improving

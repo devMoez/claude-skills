@@ -1,0 +1,1236 @@
+# Security Audit Master Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | Vulnerability Detection | Penetration Testing
+
+## Core Purpose
+Perform comprehensive security audits of applications to detect vulnerabilities, security flaws, potential intrusion points, API leaks, authentication bypasses, and overlooked security issues that could lead to data breaches or system compromise.
+
+## Self-Improvement Engine
+```yaml
+learning_capabilities:
+  - Track new vulnerability patterns (CVEs)
+  - Learn from discovered exploits
+  - Adapt to emerging attack vectors
+  - Remember application-specific risks
+  - Evolve detection algorithms
+  - Update threat intelligence
+```
+
+## Security Audit Coverage
+
+### 1. OWASP Top 10 (2023)
+- **A01: Broken Access Control**
+- **A02: Cryptographic Failures**
+- **A03: Injection**
+- **A04: Insecure Design**
+- **A05: Security Misconfiguration**
+- **A06: Vulnerable Components**
+- **A07: Authentication Failures**
+- **A08: Software & Data Integrity**
+- **A09: Logging & Monitoring Failures**
+- **A10: Server-Side Request Forgery (SSRF)**
+
+### 2. Additional Attack Vectors
+- API Security (OWASP API Top 10)
+- Business Logic Flaws
+- Race Conditions
+- Time-based Attacks
+- Side-channel Attacks
+- Supply Chain Attacks
+- Zero-day Vulnerabilities
+
+## Comprehensive Security Checklist
+
+### **Authentication & Authorization Vulnerabilities**
+
+```typescript
+// ❌ CRITICAL FLAWS TO DETECT
+
+// 1. Weak Password Storage
+// BAD: Plain text or weak hashing
+const badPasswordStorage = {
+  password: userInput, // Plain text - CRITICAL
+  password: md5(userInput), // MD5 is broken - CRITICAL
+  password: sha1(userInput), // SHA1 is weak - HIGH
+};
+
+// GOOD: Strong hashing with salt
+import bcrypt from 'bcrypt';
+const saltRounds = 12;
+const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+// 2. JWT Token Vulnerabilities
+// BAD: Weak secret
+const badJWT = jwt.sign(payload, 'secret'); // CRITICAL
+const badJWT2 = jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'none' }); // CRITICAL
+
+// BAD: No expiration
+const noExpiry = jwt.sign(payload, secret); // HIGH
+
+// GOOD: Strong secret with expiration
+const goodJWT = jwt.sign(
+  payload,
+  process.env.JWT_SECRET, // 256+ bit random string
+  {
+    algorithm: 'HS256',
+    expiresIn: '15m',
+    issuer: 'your-app',
+    audience: 'your-app-users',
+  }
+);
+
+// 3. Session Fixation
+// BAD: Reusing session ID after login
+app.post('/login', (req, res) => {
+  if (validCredentials) {
+    req.session.user = user; // CRITICAL: Should regenerate session
+  }
+});
+
+// GOOD: Regenerate session on login
+app.post('/login', (req, res) => {
+  if (validCredentials) {
+    req.session.regenerate((err) => {
+      req.session.user = user;
+    });
+  }
+});
+
+// 4. Insecure Direct Object Reference (IDOR)
+// BAD: No authorization check
+app.get('/api/users/:id', async (req, res) => {
+  const user = await db.users.findById(req.params.id); // CRITICAL
+  res.json(user);
+});
+
+// GOOD: Check ownership
+app.get('/api/users/:id', auth, async (req, res) => {
+  const requestedId = req.params.id;
+  const currentUserId = req.user.id;
+  
+  if (requestedId !== currentUserId && !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  const user = await db.users.findById(requestedId);
+  res.json(user);
+});
+
+// 5. Missing Rate Limiting
+// BAD: No rate limiting on sensitive endpoints
+app.post('/api/login', loginHandler); // CRITICAL
+app.post('/api/forgot-password', forgotHandler); // CRITICAL
+app.post('/api/signup', signupHandler); // HIGH
+
+// GOOD: Rate limiting implemented
+import rateLimit from 'express-rate-limit';
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many login attempts, please try again later',
+});
+
+app.post('/api/login', loginLimiter, loginHandler);
+
+// 6. Insufficient Authorization Checks
+// BAD: Only checking authentication
+app.delete('/api/posts/:id', isAuthenticated, async (req, res) => {
+  await db.posts.delete(req.params.id); // CRITICAL: No ownership check
+});
+
+// GOOD: Check both authentication and authorization
+app.delete('/api/posts/:id', isAuthenticated, async (req, res) => {
+  const post = await db.posts.findById(req.params.id);
+  
+  if (!post) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  if (post.authorId !== req.user.id && !req.user.isAdmin) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  await db.posts.delete(req.params.id);
+  res.json({ success: true });
+});
+```
+
+### **Injection Vulnerabilities**
+
+```typescript
+// ❌ CRITICAL INJECTION FLAWS
+
+// 1. SQL Injection
+// BAD: Direct string concatenation
+const badQuery = `SELECT * FROM users WHERE email = '${email}'`; // CRITICAL
+const badQuery2 = db.query(`DELETE FROM posts WHERE id = ${req.params.id}`); // CRITICAL
+
+// GOOD: Parameterized queries
+const goodQuery = db.query('SELECT * FROM users WHERE email = ?', [email]);
+const goodQuery2 = db.query('DELETE FROM posts WHERE id = $1', [req.params.id]);
+
+// 2. NoSQL Injection
+// BAD: Direct object usage
+const user = await db.users.findOne({ 
+  email: req.body.email, // CRITICAL if req.body.email = { $ne: null }
+  password: req.body.password 
+});
+
+// GOOD: Type validation
+const email = String(req.body.email);
+const password = String(req.body.password);
+const user = await db.users.findOne({ email, password: hashedPassword });
+
+// 3. Command Injection
+// BAD: Direct user input in exec
+const { exec } = require('child_process');
+exec(`convert ${req.body.filename} output.png`); // CRITICAL
+
+// GOOD: Input validation and sanitization
+const { execFile } = require('child_process');
+const filename = path.basename(req.body.filename); // Remove path traversal
+const allowedExtensions = ['.jpg', '.png', '.gif'];
+const ext = path.extname(filename);
+
+if (!allowedExtensions.includes(ext)) {
+  throw new Error('Invalid file type');
+}
+
+execFile('convert', [filename, 'output.png']);
+
+// 4. XSS (Cross-Site Scripting)
+// BAD: Direct HTML rendering
+app.get('/search', (req, res) => {
+  const query = req.query.q;
+  res.send(`<h1>Results for: ${query}</h1>`); // CRITICAL
+});
+
+// GOOD: Proper escaping
+import escapeHtml from 'escape-html';
+app.get('/search', (req, res) => {
+  const query = escapeHtml(req.query.q);
+  res.send(`<h1>Results for: ${query}</h1>`);
+});
+
+// React: Using dangerouslySetInnerHTML
+// BAD
+<div dangerouslySetInnerHTML={{ __html: userContent }} /> // CRITICAL
+
+// GOOD: Use DOMPurify
+import DOMPurify from 'dompurify';
+<div dangerouslySetInnerHTML={{ 
+  __html: DOMPurify.sanitize(userContent) 
+}} />
+
+// 5. LDAP Injection
+// BAD
+const filter = `(uid=${username})`; // CRITICAL
+
+// GOOD
+import ldap from 'ldapjs';
+const escapeLDAP = (str) => str.replace(/[*()\\]/g, '\\$&');
+const filter = `(uid=${escapeLDAP(username)})`;
+
+// 6. XML External Entity (XXE) Injection
+// BAD: Default XML parser settings
+const parser = new DOMParser();
+const doc = parser.parseFromString(xmlData, 'text/xml'); // CRITICAL
+
+// GOOD: Disable external entities
+const libxmljs = require('libxmljs');
+const doc = libxmljs.parseXml(xmlData, {
+  noent: false, // Disable entity substitution
+  dtdload: false, // Disable DTD loading
+  doctype: false, // Disable doctype
+});
+```
+
+### **API Security Vulnerabilities**
+
+```typescript
+// ❌ API SECURITY FLAWS
+
+// 1. API Keys in Client-Side Code
+// BAD: Exposed in frontend
+const API_KEY = 'sk_live_51H4k2J3K4L5M6N7O8P9Q0'; // CRITICAL
+const STRIPE_SECRET = process.env.STRIPE_SECRET; // CRITICAL if bundled to frontend
+
+// GOOD: Server-side only
+// Backend only - never send to client
+const API_KEY = process.env.API_KEY; // Must stay on server
+
+// 2. Missing API Authentication
+// BAD: Public endpoint with sensitive data
+app.get('/api/users', async (req, res) => {
+  const users = await db.users.find(); // CRITICAL
+  res.json(users);
+});
+
+// GOOD: Require authentication
+app.get('/api/users', authenticateToken, authorizeAdmin, async (req, res) => {
+  const users = await db.users.find({}, { password: 0, secretKey: 0 });
+  res.json(users);
+});
+
+// 3. Excessive Data Exposure
+// BAD: Returning full objects
+app.get('/api/profile', auth, async (req, res) => {
+  const user = await db.users.findById(req.user.id); // Includes password hash, secrets
+  res.json(user); // CRITICAL
+});
+
+// GOOD: Selective field exposure
+app.get('/api/profile', auth, async (req, res) => {
+  const user = await db.users.findById(req.user.id, {
+    select: 'id email name avatar createdAt',
+  });
+  res.json(user);
+});
+
+// 4. Mass Assignment
+// BAD: Direct object update
+app.patch('/api/users/:id', auth, async (req, res) => {
+  await db.users.update(req.params.id, req.body); // CRITICAL: Can set isAdmin=true
+});
+
+// GOOD: Whitelist allowed fields
+const allowedFields = ['name', 'bio', 'avatar'];
+app.patch('/api/users/:id', auth, async (req, res) => {
+  const updates = {};
+  allowedFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  });
+  await db.users.update(req.params.id, updates);
+});
+
+// 5. CORS Misconfiguration
+// BAD: Allow all origins
+app.use(cors({ origin: '*' })); // CRITICAL
+
+// BAD: Reflect origin
+app.use(cors({ 
+  origin: (origin, callback) => callback(null, origin) // CRITICAL
+}));
+
+// GOOD: Whitelist specific origins
+const allowedOrigins = [
+  'https://yourdomain.com',
+  'https://app.yourdomain.com',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
+// 6. Improper Error Handling
+// BAD: Exposing stack traces
+app.use((err, req, res, next) => {
+  res.status(500).json({ 
+    error: err.message,
+    stack: err.stack, // CRITICAL: Exposes file paths, code structure
+  });
+});
+
+// GOOD: Generic error messages
+app.use((err, req, res, next) => {
+  console.error(err); // Log for debugging
+  
+  const statusCode = err.statusCode || 500;
+  const message = statusCode === 500 
+    ? 'Internal server error' 
+    : err.message;
+  
+  res.status(statusCode).json({ error: message });
+});
+
+// 7. GraphQL Introspection in Production
+// BAD: Enabled in production
+const server = new ApolloServer({
+  schema,
+  introspection: true, // CRITICAL in production
+  playground: true, // CRITICAL in production
+});
+
+// GOOD: Disable in production
+const server = new ApolloServer({
+  schema,
+  introspection: process.env.NODE_ENV !== 'production',
+  playground: process.env.NODE_ENV !== 'production',
+});
+```
+
+### **Cryptographic Failures**
+
+```typescript
+// ❌ CRYPTOGRAPHIC VULNERABILITIES
+
+// 1. Weak Random Number Generation
+// BAD: Math.random for security
+const sessionId = Math.random().toString(36); // CRITICAL
+const resetToken = Math.random().toString(36).substring(7); // CRITICAL
+
+// GOOD: Cryptographically secure random
+import crypto from 'crypto';
+const sessionId = crypto.randomBytes(32).toString('hex');
+const resetToken = crypto.randomBytes(32).toString('hex');
+
+// 2. Hardcoded Secrets
+// BAD: Secrets in code
+const JWT_SECRET = 'my-secret-key'; // CRITICAL
+const API_KEY = '12345abcde'; // CRITICAL
+const ENCRYPTION_KEY = 'fixed-key'; // CRITICAL
+
+// GOOD: Environment variables
+const JWT_SECRET = process.env.JWT_SECRET;
+const API_KEY = process.env.API_KEY;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+
+// Validate on startup
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters');
+}
+
+// 3. Insecure Encryption
+// BAD: ECB mode (deterministic)
+const cipher = crypto.createCipher('aes-128-ecb', key); // CRITICAL
+
+// GOOD: GCM mode (authenticated encryption)
+const algorithm = 'aes-256-gcm';
+const iv = crypto.randomBytes(16);
+const cipher = crypto.createCipheriv(algorithm, key, iv);
+
+// 4. Storing Sensitive Data Unencrypted
+// BAD: Plain text in database
+await db.creditCards.create({
+  userId: user.id,
+  cardNumber: req.body.cardNumber, // CRITICAL
+  cvv: req.body.cvv, // CRITICAL
+});
+
+// GOOD: Encrypt or use payment gateway
+// Never store CVV
+// Use tokenization for card numbers
+await stripe.customers.createSource(customerId, {
+  source: cardToken, // Tokenized by Stripe
+});
+
+// 5. Insecure Communication
+// BAD: HTTP for sensitive data
+fetch('http://api.example.com/login', { // CRITICAL
+  method: 'POST',
+  body: JSON.stringify({ password }),
+});
+
+// GOOD: HTTPS only
+fetch('https://api.example.com/login', {
+  method: 'POST',
+  body: JSON.stringify({ password }),
+});
+
+// Enforce HTTPS
+app.use((req, res, next) => {
+  if (!req.secure && process.env.NODE_ENV === 'production') {
+    return res.redirect('https://' + req.headers.host + req.url);
+  }
+  next();
+});
+```
+
+### **File Upload Vulnerabilities**
+
+```typescript
+// ❌ FILE UPLOAD SECURITY FLAWS
+
+// 1. No File Type Validation
+// BAD: Accept any file
+app.post('/upload', upload.single('file'), (req, res) => {
+  // CRITICAL: Can upload malicious files
+  res.json({ path: req.file.path });
+});
+
+// GOOD: Strict validation
+import path from 'path';
+import mime from 'mime-types';
+
+const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mimeType = file.mimetype;
+  
+  if (!allowedExtensions.includes(ext) || !allowedTypes.includes(mimeType)) {
+    return cb(new Error('Invalid file type'));
+  }
+  
+  cb(null, true);
+};
+
+const upload = multer({ 
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+// 2. Path Traversal
+// BAD: User-controlled filename
+const filename = req.body.filename;
+fs.writeFile(`./uploads/${filename}`, data); // CRITICAL: Can write to ../../etc/passwd
+
+// GOOD: Sanitize filename
+const filename = path.basename(req.body.filename); // Remove directory components
+const safePath = path.join('./uploads', filename);
+
+if (!safePath.startsWith(path.resolve('./uploads'))) {
+  throw new Error('Invalid path');
+}
+
+// 3. File Execution
+// BAD: Serving uploads from public directory
+app.use('/uploads', express.static('uploads')); // CRITICAL: Can execute uploaded scripts
+
+// GOOD: Serve with correct headers
+app.get('/uploads/:filename', async (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filepath = path.join('./uploads', filename);
+  
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.sendFile(filepath);
+});
+
+// 4. ZIP Bomb / Decompression Bomb
+// BAD: No size check before decompression
+const unzip = require('unzip-stream');
+fs.createReadStream(uploadPath).pipe(unzip.Extract({ path: './extracted' })); // CRITICAL
+
+// GOOD: Check size before extraction
+const maxSize = 100 * 1024 * 1024; // 100MB
+let totalSize = 0;
+
+fs.createReadStream(uploadPath)
+  .pipe(unzip.Parse())
+  .on('entry', (entry) => {
+    totalSize += entry.size;
+    
+    if (totalSize > maxSize) {
+      entry.autodrain();
+      throw new Error('Archive too large');
+    }
+    
+    entry.pipe(fs.createWriteStream(`./extracted/${entry.path}`));
+  });
+```
+
+### **Business Logic Vulnerabilities**
+
+```typescript
+// ❌ BUSINESS LOGIC FLAWS
+
+// 1. Race Conditions
+// BAD: No transaction
+app.post('/api/withdraw', auth, async (req, res) => {
+  const user = await db.users.findById(req.user.id);
+  
+  if (user.balance >= req.body.amount) { // Race condition window
+    user.balance -= req.body.amount;
+    await user.save(); // CRITICAL: Can withdraw more than balance
+  }
+});
+
+// GOOD: Use database transactions
+app.post('/api/withdraw', auth, async (req, res) => {
+  await db.transaction(async (trx) => {
+    const user = await trx.users
+      .findById(req.user.id)
+      .forUpdate(); // Lock row
+    
+    if (user.balance < req.body.amount) {
+      throw new Error('Insufficient balance');
+    }
+    
+    await trx.users.update(req.user.id, {
+      balance: user.balance - req.body.amount,
+    });
+  });
+});
+
+// 2. Integer Overflow
+// BAD: No bounds checking
+const quantity = parseInt(req.body.quantity);
+const total = price * quantity; // CRITICAL: Can overflow
+
+// GOOD: Validate bounds
+const quantity = parseInt(req.body.quantity);
+
+if (quantity < 0 || quantity > 1000000) {
+  throw new Error('Invalid quantity');
+}
+
+const total = BigInt(price) * BigInt(quantity);
+
+// 3. Time-of-check to Time-of-use (TOCTOU)
+// BAD: Separate check and use
+if (await hasPermission(user, resource)) { // Check
+  await performAction(resource); // Use - permission might have changed
+}
+
+// GOOD: Atomic operation
+await performActionWithPermissionCheck(user, resource);
+
+// 4. Insufficient Anti-automation
+// BAD: No CAPTCHA or challenge
+app.post('/api/vote', async (req, res) => {
+  await db.votes.create({ userId: req.user.id, postId: req.body.postId });
+}); // CRITICAL: Can be automated
+
+// GOOD: Add rate limiting + CAPTCHA
+app.post('/api/vote', 
+  rateLimiter,
+  verifyCaptcha,
+  async (req, res) => {
+    // Check if already voted
+    const existing = await db.votes.findOne({
+      userId: req.user.id,
+      postId: req.body.postId,
+    });
+    
+    if (existing) {
+      throw new Error('Already voted');
+    }
+    
+    await db.votes.create({ userId: req.user.id, postId: req.body.postId });
+  }
+);
+
+// 5. Price Manipulation
+// BAD: Client sends price
+app.post('/api/checkout', auth, async (req, res) => {
+  const total = req.body.items.reduce((sum, item) => 
+    sum + (item.price * item.quantity), 0 // CRITICAL: Client controls price
+  );
+});
+
+// GOOD: Server calculates price
+app.post('/api/checkout', auth, async (req, res) => {
+  const items = await db.products.findMany({
+    where: { id: { in: req.body.items.map(i => i.id) } },
+  });
+  
+  const total = req.body.items.reduce((sum, item) => {
+    const product = items.find(p => p.id === item.id);
+    if (!product) throw new Error('Invalid product');
+    
+    return sum + (product.price * item.quantity);
+  }, 0);
+});
+```
+
+### **Infrastructure & Configuration**
+
+```typescript
+// ❌ INFRASTRUCTURE VULNERABILITIES
+
+// 1. Exposed .env Files
+// BAD: .env in git
+// .gitignore missing .env
+// CRITICAL: Secrets exposed in repository
+
+// GOOD: Proper .gitignore
+/*
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+*/
+
+// 2. Debug Mode in Production
+// BAD: Debug enabled
+app.set('env', 'development'); // CRITICAL
+const DEBUG = true; // CRITICAL
+
+// GOOD: Environment-based
+const DEBUG = process.env.NODE_ENV !== 'production';
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('env', 'production');
+  app.disable('x-powered-by');
+}
+
+// 3. Default Credentials
+// BAD: Default admin account
+const admin = {
+  username: 'admin',
+  password: 'admin123', // CRITICAL
+};
+
+// GOOD: Force password change on first login
+const admin = {
+  username: process.env.ADMIN_USERNAME,
+  password: await bcrypt.hash(process.env.ADMIN_PASSWORD, 12),
+  mustChangePassword: true,
+};
+
+// 4. Exposed Admin Panels
+// BAD: Public admin route
+app.use('/admin', adminRoutes); // CRITICAL: No authentication
+
+// GOOD: Protected admin routes
+app.use('/admin', 
+  requireAuth,
+  requireRole('admin'),
+  ipWhitelist,
+  adminRoutes
+);
+
+// 5. Information Disclosure
+// BAD: Verbose error messages
+app.get('/api/user/:id', async (req, res) => {
+  try {
+    const user = await db.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message, // CRITICAL: May expose database structure
+      query: error.sql, // CRITICAL
+    });
+  }
+});
+
+// GOOD: Generic errors in production
+app.get('/api/user/:id', async (req, res) => {
+  try {
+    const user = await db.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    res.json(user);
+  } catch (error) {
+    logger.error(error); // Log internally
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 6. Dependency Vulnerabilities
+// BAD: Outdated dependencies
+// package.json with old versions
+// No security audits
+
+// GOOD: Regular updates and audits
+// npm audit
+// npm update
+// Use Dependabot or Snyk
+// package.json with ^ or ~ for minor updates
+
+// 7. Missing Security Headers
+// BAD: No security headers
+app.get('/', (req, res) => {
+  res.send('Hello'); // Missing security headers
+});
+
+// GOOD: Helmet middleware
+import helmet from 'helmet';
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'same-origin' },
+}));
+```
+
+## Automated Security Audit Script
+
+```typescript
+import fs from 'fs';
+import path from 'path';
+import { glob } from 'glob';
+
+interface SecurityIssue {
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  category: string;
+  description: string;
+  file: string;
+  line: number;
+  code: string;
+  recommendation: string;
+}
+
+class SecurityAuditor {
+  private issues: SecurityIssue[] = [];
+  
+  // Dangerous patterns to detect
+  private patterns = {
+    // Authentication
+    plainTextPassword: /password\s*[:=]\s*['"].*['"]/gi,
+    weakHash: /(md5|sha1)\(/gi,
+    noExpiry: /jwt\.sign\([^)]*\)(?![^)]*expiresIn)/gi,
+    
+    // Injection
+    sqlInjection: /query\s*\(\s*['"`].*\$\{/gi,
+    commandInjection: /exec\s*\(\s*['"`].*\$\{/gi,
+    nosqlInjection: /findOne\s*\(\s*{\s*email\s*:\s*req\.body/gi,
+    
+    // XSS
+    dangerousHTML: /dangerouslySetInnerHTML/gi,
+    directHTML: /\.innerHTML\s*=/gi,
+    
+    // Secrets
+    hardcodedSecret: /(api[_-]?key|secret|password|token)\s*[:=]\s*['"][^'"]{8,}['"]/gi,
+    apiKeyExposed: /(sk_live|pk_live|key_|secret_|token_)[a-zA-Z0-9]{20,}/gi,
+    
+    // CORS
+    corsAllOrigins: /cors\s*\(\s*{\s*origin\s*:\s*['"]?\*['"]?\s*}\s*\)/gi,
+    
+    // Crypto
+    mathRandom: /Math\.random\(\)/gi,
+    weakCipher: /createCipher\s*\(/gi,
+    
+    // File operations
+    pathTraversal: /\$\{.*filename.*\}/gi,
+    
+    // HTTP
+    httpNotHttps: /['"]http:\/\//gi,
+  };
+  
+  async scanDirectory(directory: string): Promise<SecurityIssue[]> {
+    const files = await glob('**/*.{js,ts,jsx,tsx}', {
+      cwd: directory,
+      ignore: ['node_modules/**', 'dist/**', 'build/**'],
+    });
+    
+    for (const file of files) {
+      await this.scanFile(path.join(directory, file));
+    }
+    
+    return this.issues;
+  }
+  
+  async scanFile(filepath: string): Promise<void> {
+    const content = fs.readFileSync(filepath, 'utf-8');
+    const lines = content.split('\n');
+    
+    lines.forEach((line, index) => {
+      this.checkLine(line, index + 1, filepath);
+    });
+    
+    // Check for missing security measures
+    this.checkMissingSecurityMeasures(content, filepath);
+  }
+  
+  private checkLine(line: string, lineNumber: number, file: string): void {
+    // Plain text passwords
+    if (this.patterns.plainTextPassword.test(line)) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Authentication',
+        description: 'Potential plain text password storage',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use bcrypt or argon2 for password hashing',
+      });
+    }
+    
+    // Weak hashing
+    if (this.patterns.weakHash.test(line) && line.includes('password')) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Cryptography',
+        description: 'Weak hashing algorithm for passwords (MD5/SHA1)',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use bcrypt, scrypt, or argon2',
+      });
+    }
+    
+    // SQL Injection
+    if (this.patterns.sqlInjection.test(line)) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Injection',
+        description: 'Potential SQL injection vulnerability',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use parameterized queries or prepared statements',
+      });
+    }
+    
+    // Command Injection
+    if (this.patterns.commandInjection.test(line)) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Injection',
+        description: 'Potential command injection vulnerability',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use execFile with array of arguments, validate and sanitize input',
+      });
+    }
+    
+    // Hardcoded secrets
+    if (this.patterns.hardcodedSecret.test(line)) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Secrets Management',
+        description: 'Hardcoded secret or API key detected',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Move to environment variables',
+      });
+    }
+    
+    // API key exposure
+    if (this.patterns.apiKeyExposed.test(line)) {
+      this.addIssue({
+        severity: 'CRITICAL',
+        category: 'Secrets Management',
+        description: 'Exposed API key or secret token',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Remove from code, rotate key, use environment variables',
+      });
+    }
+    
+    // CORS misconfiguration
+    if (this.patterns.corsAllOrigins.test(line)) {
+      this.addIssue({
+        severity: 'HIGH',
+        category: 'CORS',
+        description: 'CORS allows all origins (*)',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Whitelist specific origins',
+      });
+    }
+    
+    // Math.random for security
+    if (this.patterns.mathRandom.test(line) && 
+        (line.includes('token') || line.includes('session') || line.includes('id'))) {
+      this.addIssue({
+        severity: 'HIGH',
+        category: 'Cryptography',
+        description: 'Math.random() used for security-sensitive operation',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use crypto.randomBytes() instead',
+      });
+    }
+    
+    // XSS vulnerabilities
+    if (this.patterns.dangerousHTML.test(line)) {
+      this.addIssue({
+        severity: 'HIGH',
+        category: 'XSS',
+        description: 'dangerouslySetInnerHTML usage detected',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Sanitize content with DOMPurify before rendering',
+      });
+    }
+    
+    // HTTP in production
+    if (this.patterns.httpNotHttps.test(line) && !line.includes('localhost')) {
+      this.addIssue({
+        severity: 'MEDIUM',
+        category: 'Communication',
+        description: 'HTTP URL detected (should use HTTPS)',
+        file,
+        line: lineNumber,
+        code: line.trim(),
+        recommendation: 'Use HTTPS for all external communications',
+      });
+    }
+  }
+  
+  private checkMissingSecurityMeasures(content: string, file: string): void {
+    // Check for helmet
+    if (file.includes('server') || file.includes('app.ts')) {
+      if (!content.includes('helmet')) {
+        this.addIssue({
+          severity: 'MEDIUM',
+          category: 'Security Headers',
+          description: 'Missing Helmet middleware for security headers',
+          file,
+          line: 0,
+          code: '',
+          recommendation: 'Add helmet() middleware',
+        });
+      }
+      
+      // Check for rate limiting
+      if (!content.includes('rateLimit') && !content.includes('rate-limit')) {
+        this.addIssue({
+          severity: 'HIGH',
+          category: 'Rate Limiting',
+          description: 'No rate limiting detected',
+          file,
+          line: 0,
+          code: '',
+          recommendation: 'Implement rate limiting for all endpoints',
+        });
+      }
+    }
+    
+    // Check .env in .gitignore
+    if (file.endsWith('.gitignore')) {
+      if (!content.includes('.env')) {
+        this.addIssue({
+          severity: 'CRITICAL',
+          category: 'Secrets Management',
+          description: '.env not in .gitignore',
+          file,
+          line: 0,
+          code: '',
+          recommendation: 'Add .env to .gitignore',
+        });
+      }
+    }
+  }
+  
+  private addIssue(issue: SecurityIssue): void {
+    this.issues.push(issue);
+  }
+  
+  generateReport(): string {
+    const grouped = this.groupBySeverity();
+    
+    let report = '# Security Audit Report\n\n';
+    report += `Total Issues Found: ${this.issues.length}\n\n`;
+    
+    ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].forEach(severity => {
+      const issues = grouped[severity] || [];
+      if (issues.length === 0) return;
+      
+      report += `## ${severity} - ${issues.length} issues\n\n`;
+      
+      issues.forEach((issue, index) => {
+        report += `### ${index + 1}. ${issue.category}: ${issue.description}\n`;
+        report += `**File:** ${issue.file}:${issue.line}\n`;
+        if (issue.code) {
+          report += `**Code:** \`${issue.code}\`\n`;
+        }
+        report += `**Recommendation:** ${issue.recommendation}\n\n`;
+      });
+    });
+    
+    return report;
+  }
+  
+  private groupBySeverity(): Record<string, SecurityIssue[]> {
+    return this.issues.reduce((acc, issue) => {
+      if (!acc[issue.severity]) acc[issue.severity] = [];
+      acc[issue.severity].push(issue);
+      return acc;
+    }, {} as Record<string, SecurityIssue[]>);
+  }
+}
+
+// Usage
+const auditor = new SecurityAuditor();
+const issues = await auditor.scanDirectory('./src');
+console.log(auditor.generateReport());
+```
+
+## Dependency Security Scanner
+
+```typescript
+import { execSync } from 'child_process';
+import fs from 'fs';
+
+class DependencyScanner {
+  async scanDependencies(): Promise<void> {
+    console.log('Running npm audit...\n');
+    
+    try {
+      const audit = execSync('npm audit --json', { encoding: 'utf-8' });
+      const result = JSON.parse(audit);
+      
+      this.analyzeAuditResults(result);
+    } catch (error: any) {
+      if (error.stdout) {
+        const result = JSON.parse(error.stdout);
+        this.analyzeAuditResults(result);
+      }
+    }
+    
+    // Check for outdated packages
+    console.log('\nChecking for outdated packages...\n');
+    try {
+      execSync('npm outdated', { encoding: 'utf-8', stdio: 'inherit' });
+    } catch (error) {
+      // npm outdated exits with 1 if packages are outdated
+    }
+  }
+  
+  private analyzeAuditResults(result: any): void {
+    const { vulnerabilities } = result;
+    
+    if (!vulnerabilities) {
+      console.log('No vulnerabilities found!');
+      return;
+    }
+    
+    const critical = Object.values(vulnerabilities).filter(
+      (v: any) => v.severity === 'critical'
+    ).length;
+    
+    const high = Object.values(vulnerabilities).filter(
+      (v: any) => v.severity === 'high'
+    ).length;
+    
+    console.log(`Critical: ${critical}`);
+    console.log(`High: ${high}`);
+    
+    if (critical > 0 || high > 0) {
+      console.log('\n⚠️  CRITICAL OR HIGH VULNERABILITIES FOUND!');
+      console.log('Run: npm audit fix\n');
+    }
+  }
+}
+```
+
+## Security Checklist for Code Review
+
+```markdown
+## Pre-Deployment Security Checklist
+
+### Authentication & Authorization
+- [ ] Passwords hashed with bcrypt/argon2 (min 10 rounds)
+- [ ] JWT tokens have expiration
+- [ ] JWT secret is strong (256+ bits) and in env variables
+- [ ] Session regeneration on login
+- [ ] Rate limiting on authentication endpoints
+- [ ] Multi-factor authentication for sensitive operations
+- [ ] Authorization checks on all protected endpoints
+- [ ] No IDOR vulnerabilities
+
+### Input Validation
+- [ ] All user inputs validated and sanitized
+- [ ] Parameterized queries for SQL
+- [ ] Type checking for NoSQL queries
+- [ ] File upload validation (type, size, content)
+- [ ] Request size limits enforced
+- [ ] Special characters escaped in outputs
+
+### API Security
+- [ ] No API keys in client-side code
+- [ ] All sensitive endpoints require authentication
+- [ ] CORS properly configured (no *)
+- [ ] Rate limiting on all endpoints
+- [ ] GraphQL introspection disabled in production
+- [ ] Excessive data exposure prevented
+- [ ] Mass assignment prevented
+
+### Cryptography
+- [ ] No hardcoded secrets
+- [ ] Strong random number generation (crypto.randomBytes)
+- [ ] HTTPS enforced
+- [ ] Secure encryption algorithms (AES-256-GCM)
+- [ ] Sensitive data encrypted at rest
+- [ ] TLS 1.2+ only
+
+### Error Handling
+- [ ] No stack traces in production
+- [ ] Generic error messages for users
+- [ ] Detailed logs on server only
+- [ ] No information disclosure
+
+### Infrastructure
+- [ ] .env in .gitignore
+- [ ] Debug mode disabled in production
+- [ ] Default credentials changed
+- [ ] Security headers (Helmet)
+- [ ] Dependencies up to date
+- [ ] npm audit clean
+- [ ] Admin panels protected
+
+### File Operations
+- [ ] Path traversal prevented
+- [ ] File type validation
+- [ ] File size limits
+- [ ] Files served with correct headers
+- [ ] Uploaded files not executed
+
+### Business Logic
+- [ ] Race conditions prevented (transactions)
+- [ ] Price calculated server-side
+- [ ] Anti-automation measures (CAPTCHA)
+- [ ] Integer overflow checks
+- [ ] Idempotency for critical operations
+
+### Logging & Monitoring
+- [ ] Security events logged
+- [ ] Failed login attempts tracked
+- [ ] Unusual activity alerts
+- [ ] Audit trail for sensitive operations
+```
+
+## Learning & Adaptation
+
+The skill continuously learns from:
+- New CVE disclosures
+- Emerging attack patterns
+- Zero-day vulnerabilities
+- Industry security incidents
+- Penetration testing results
+- Security research papers
+
+And automatically updates:
+- Detection patterns
+- Severity rankings
+- Remediation recommendations
+- Best practices
+- Compliance requirements
+
+---
+**Status:** Production Ready | Continuously Updated | Threat Intelligence Integrated
+
+## Quick Scan Commands
+
+```bash
+# Scan entire project
+security-audit ./
+
+# Scan specific directory
+security-audit ./src
+
+# Generate report
+security-audit --report report.md
+
+# Check dependencies
+security-audit --deps
+
+# Full audit
+security-audit --full
+```

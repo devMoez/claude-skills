@@ -1,0 +1,651 @@
+# Real-time Collaboration Skill
+**Version:** 2.0.0  
+**Type:** Self-Improving | WebSocket | Collaborative Editing
+
+## Core Purpose
+Build real-time collaborative features with WebSockets, operational transformation, conflict resolution, presence awareness, and synchronization across distributed clients.
+
+## Self-Improvement Engine
+```yaml
+learning_capabilities:
+  - Track collaboration patterns
+  - Learn conflict resolution strategies
+  - Optimize sync algorithms
+  - Adapt to network conditions
+  - Monitor user interaction patterns
+```
+
+## Core Technologies
+
+### Real-time Protocols
+- **WebSocket** (Socket.io, ws)
+- **WebRTC** (Peer-to-peer)
+- **Server-Sent Events** (SSE)
+- **Long Polling** (Fallback)
+
+### Synchronization Strategies
+- **Operational Transformation** (OT)
+- **Conflict-free Replicated Data Types** (CRDTs)
+- **Differential Synchronization**
+- **Event Sourcing**
+
+## Collaborative Text Editor
+
+### **Backend with Socket.io**
+```typescript
+import express from 'express';
+import { createServer } from 'http';
+import { Server, Socket } from 'socket.io';
+import { createClient } from 'redis';
+import { Doc } from 'yjs';
+import * as Y from 'yjs';
+
+// Document storage and synchronization
+interface Document {
+  id: string;
+  content: Y.Doc;
+  users: Map<string, UserPresence>;
+  version: number;
+  lastModified: Date;
+}
+
+interface UserPresence {
+  id: string;
+  name: string;
+  color: string;
+  cursor: { line: number; column: number } | null;
+  selection: { start: any; end: any } | null;
+  online: boolean;
+  lastSeen: Date;
+}
+
+interface Operation {
+  type: 'insert' | 'delete' | 'format';
+  position: number;
+  content?: string;
+  length?: number;
+  attributes?: Record<string, any>;
+  userId: string;
+  timestamp: number;
+}
+
+// CRDT-based collaborative document
+class CollaborativeDocument {
+  private documents = new Map<string, Document>();
+  private redis = createClient({ url: process.env.REDIS_URL });
+  private operationHistory = new Map<string, Operation[]>();
+  
+  async init() {
+    await this.redis.connect();
+  }
+  
+  async getOrCreate(docId: string): Promise<Document> {
+    if (this.documents.has(docId)) {
+      return this.documents.get(docId)!;
+    }
+    
+    // Try to load from Redis
+    const saved = await this.redis.get(`doc:${docId}`);
+    
+    const doc: Document = saved
+      ? JSON.parse(saved)
+      : {
+          id: docId,
+          content: new Y.Doc(),
+          users: new Map(),
+          version: 0,
+          lastModified: new Date(),
+        };
+    
+    this.documents.set(docId, doc);
+    return doc;
+  }
+  
+  async applyOperation(docId: string, operation: Operation): Promise<void> {
+    const doc = await this.getOrCreate(docId);
+    const yText = doc.content.getText('content');
+    
+    // Apply operation using Yjs CRDT
+    switch (operation.type) {
+      case 'insert':
+        yText.insert(operation.position, operation.content || '');
+        break;
+      case 'delete':
+        yText.delete(operation.position, operation.length || 0);
+        break;
+      case 'format':
+        yText.format(
+          operation.position,
+          operation.length || 0,
+          operation.attributes || {}
+        );
+        break;
+    }
+    
+    // Track operation
+    const history = this.operationHistory.get(docId) || [];
+    history.push(operation);
+    if (history.length > 1000) {
+      history.shift();
+    }
+    this.operationHistory.set(docId, history);
+    
+    // Update version
+    doc.version++;
+    doc.lastModified = new Date();
+    
+    // Save to Redis periodically
+    if (doc.version % 10 === 0) {
+      await this.save(docId);
+    }
+  }
+  
+  async save(docId: string): Promise<void> {
+    const doc = this.documents.get(docId);
+    if (!doc) return;
+    
+    await this.redis.set(
+      `doc:${docId}`,
+      JSON.stringify({
+        id: doc.id,
+        content: Y.encodeStateAsUpdate(doc.content),
+        version: doc.version,
+        lastModified: doc.lastModified,
+      }),
+      { EX: 86400 } // 24 hours
+    );
+  }
+  
+  addUser(docId: string, user: UserPresence): void {
+    const doc = this.documents.get(docId);
+    if (!doc) return;
+    
+    doc.users.set(user.id, user);
+  }
+  
+  removeUser(docId: string, userId: string): void {
+    const doc = this.documents.get(docId);
+    if (!doc) return;
+    
+    const user = doc.users.get(userId);
+    if (user) {
+      user.online = false;
+      user.lastSeen = new Date();
+    }
+  }
+  
+  updatePresence(docId: string, userId: string, presence: Partial<UserPresence>): void {
+    const doc = this.documents.get(docId);
+    if (!doc) return;
+    
+    const user = doc.users.get(userId);
+    if (user) {
+      Object.assign(user, presence);
+    }
+  }
+  
+  getPresence(docId: string): UserPresence[] {
+    const doc = this.documents.get(docId);
+    if (!doc) return [];
+    
+    return Array.from(doc.users.values());
+  }
+}
+
+// Real-time collaboration server
+class CollaborationServer {
+  private app = express();
+  private httpServer = createServer(this.app);
+  private io = new Server(this.httpServer, {
+    cors: {
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+      credentials: true,
+    },
+    transports: ['websocket', 'polling'],
+  });
+  
+  private docManager = new CollaborativeDocument();
+  private userColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
+  
+  async init() {
+    await this.docManager.init();
+    this.setupMiddleware();
+    this.setupSocketHandlers();
+  }
+  
+  private setupMiddleware() {
+    this.app.use(express.json());
+    
+    // Health check
+    this.app.get('/health', (req, res) => {
+      res.json({
+        status: 'healthy',
+        connections: this.io.sockets.sockets.size,
+      });
+    });
+  }
+  
+  private setupSocketHandlers() {
+    this.io.on('connection', (socket: Socket) => {
+      console.log(`Client connected: ${socket.id}`);
+      
+      let currentDocId: string | null = null;
+      let currentUserId: string | null = null;
+      
+      // Join document
+      socket.on('join-document', async (data: {
+        docId: string;
+        userId: string;
+        userName: string;
+      }) => {
+        currentDocId = data.docId;
+        currentUserId = data.userId;
+        
+        // Join room
+        socket.join(data.docId);
+        
+        // Get or create document
+        const doc = await this.docManager.getOrCreate(data.docId);
+        
+        // Add user presence
+        const userPresence: UserPresence = {
+          id: data.userId,
+          name: data.userName,
+          color: this.userColors[Math.floor(Math.random() * this.userColors.length)],
+          cursor: null,
+          selection: null,
+          online: true,
+          lastSeen: new Date(),
+        };
+        
+        this.docManager.addUser(data.docId, userPresence);
+        
+        // Send initial document state
+        socket.emit('document-state', {
+          content: doc.content.getText('content').toString(),
+          version: doc.version,
+          users: this.docManager.getPresence(data.docId),
+        });
+        
+        // Notify others
+        socket.to(data.docId).emit('user-joined', userPresence);
+      });
+      
+      // Handle operations
+      socket.on('operation', async (operation: Operation) => {
+        if (!currentDocId) return;
+        
+        try {
+          // Apply operation
+          await this.docManager.applyOperation(currentDocId, operation);
+          
+          // Broadcast to others
+          socket.to(currentDocId).emit('operation', operation);
+          
+          // Acknowledge
+          socket.emit('operation-ack', {
+            timestamp: operation.timestamp,
+            version: (await this.docManager.getOrCreate(currentDocId)).version,
+          });
+        } catch (error) {
+          console.error('Operation error:', error);
+          socket.emit('operation-error', {
+            timestamp: operation.timestamp,
+            error: 'Failed to apply operation',
+          });
+        }
+      });
+      
+      // Cursor movement
+      socket.on('cursor-move', (data: { line: number; column: number }) => {
+        if (!currentDocId || !currentUserId) return;
+        
+        this.docManager.updatePresence(currentDocId, currentUserId, {
+          cursor: data,
+        });
+        
+        socket.to(currentDocId).emit('cursor-update', {
+          userId: currentUserId,
+          cursor: data,
+        });
+      });
+      
+      // Selection change
+      socket.on('selection-change', (data: { start: any; end: any }) => {
+        if (!currentDocId || !currentUserId) return;
+        
+        this.docManager.updatePresence(currentDocId, currentUserId, {
+          selection: data,
+        });
+        
+        socket.to(currentDocId).emit('selection-update', {
+          userId: currentUserId,
+          selection: data,
+        });
+      });
+      
+      // Typing indicator
+      socket.on('typing-start', () => {
+        if (!currentDocId || !currentUserId) return;
+        
+        socket.to(currentDocId).emit('user-typing', {
+          userId: currentUserId,
+        });
+      });
+      
+      socket.on('typing-stop', () => {
+        if (!currentDocId || !currentUserId) return;
+        
+        socket.to(currentDocId).emit('user-stopped-typing', {
+          userId: currentUserId,
+        });
+      });
+      
+      // Comments
+      socket.on('add-comment', (data: {
+        position: number;
+        content: string;
+      }) => {
+        if (!currentDocId || !currentUserId) return;
+        
+        const comment = {
+          id: Date.now().toString(),
+          userId: currentUserId,
+          position: data.position,
+          content: data.content,
+          timestamp: new Date(),
+          resolved: false,
+        };
+        
+        this.io.to(currentDocId).emit('comment-added', comment);
+      });
+      
+      // Disconnect
+      socket.on('disconnect', () => {
+        console.log(`Client disconnected: ${socket.id}`);
+        
+        if (currentDocId && currentUserId) {
+          this.docManager.removeUser(currentDocId, currentUserId);
+          
+          socket.to(currentDocId).emit('user-left', {
+            userId: currentUserId,
+          });
+          
+          // Save document
+          this.docManager.save(currentDocId);
+        }
+      });
+    });
+  }
+  
+  start(port: number) {
+    this.httpServer.listen(port, () => {
+      console.log(`Collaboration server listening on port ${port}`);
+    });
+  }
+}
+
+// Start server
+const server = new CollaborationServer();
+server.init().then(() => server.start(4000));
+```
+
+### **Frontend Client (React)**
+```typescript
+import { useEffect, useRef, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { EditorState } from '@codemirror/state';
+import { EditorView, ViewUpdate } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
+
+interface User {
+  id: string;
+  name: string;
+  color: string;
+  cursor: { line: number; column: number } | null;
+  online: boolean;
+}
+
+export function CollaborativeEditor({ docId, userId, userName }: {
+  docId: string;
+  userId: string;
+  userName: string;
+}) {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [synced, setSynced] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+  const pendingOps = useRef<any[]>([]);
+  
+  // Connect to server
+  useEffect(() => {
+    const newSocket = io('http://localhost:4000', {
+      transports: ['websocket', 'polling'],
+    });
+    
+    setSocket(newSocket);
+    
+    return () => {
+      newSocket.close();
+    };
+  }, []);
+  
+  // Setup socket listeners
+  useEffect(() => {
+    if (!socket) return;
+    
+    socket.emit('join-document', { docId, userId, userName });
+    
+    // Initial state
+    socket.on('document-state', (data: {
+      content: string;
+      version: number;
+      users: User[];
+    }) => {
+      setUsers(data.users);
+      setSynced(true);
+      
+      // Initialize editor
+      if (editorRef.current && !viewRef.current) {
+        const state = EditorState.create({
+          doc: data.content,
+          extensions: [
+            basicSetup,
+            EditorView.updateListener.of(handleEditorUpdate),
+          ],
+        });
+        
+        viewRef.current = new EditorView({
+          state,
+          parent: editorRef.current,
+        });
+      }
+    });
+    
+    // Remote operations
+    socket.on('operation', (operation: any) => {
+      if (!viewRef.current) return;
+      
+      const view = viewRef.current;
+      const transaction = view.state.update({
+        changes: operation.type === 'insert'
+          ? { from: operation.position, insert: operation.content }
+          : { from: operation.position, to: operation.position + operation.length },
+      });
+      
+      view.dispatch(transaction);
+    });
+    
+    // User presence
+    socket.on('user-joined', (user: User) => {
+      setUsers(prev => [...prev, user]);
+    });
+    
+    socket.on('user-left', ({ userId }: { userId: string }) => {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+    });
+    
+    socket.on('cursor-update', ({ userId, cursor }: any) => {
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, cursor } : u
+      ));
+    });
+    
+    return () => {
+      socket.off('document-state');
+      socket.off('operation');
+      socket.off('user-joined');
+      socket.off('user-left');
+      socket.off('cursor-update');
+    };
+  }, [socket, docId, userId, userName]);
+  
+  // Handle editor changes
+  const handleEditorUpdate = (update: ViewUpdate) => {
+    if (!socket || !update.docChanged) return;
+    
+    update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+      const operation = inserted.length > 0
+        ? {
+            type: 'insert' as const,
+            position: fromB,
+            content: inserted.toString(),
+            userId,
+            timestamp: Date.now(),
+          }
+        : {
+            type: 'delete' as const,
+            position: fromB,
+            length: toA - fromA,
+            userId,
+            timestamp: Date.now(),
+          };
+      
+      socket.emit('operation', operation);
+    });
+  };
+  
+  return (
+    <div className="collaborative-editor">
+      <div className="editor-header">
+        <div className="users-list">
+          {users.filter(u => u.online).map(user => (
+            <div
+              key={user.id}
+              className="user-badge"
+              style={{ backgroundColor: user.color }}
+              title={user.name}
+            >
+              {user.name[0].toUpperCase()}
+            </div>
+          ))}
+        </div>
+        
+        <div className="sync-status">
+          {synced ? (
+            <span className="synced">✓ Synced</span>
+          ) : (
+            <span className="syncing">Syncing...</span>
+          )}
+        </div>
+      </div>
+      
+      <div ref={editorRef} className="editor-content" />
+    </div>
+  );
+}
+```
+
+## Real-time Data Sync
+
+### **Optimistic Updates Pattern**
+```typescript
+class OptimisticSync<T> {
+  private pendingUpdates = new Map<string, T>();
+  private socket: Socket;
+  
+  constructor(socket: Socket) {
+    this.socket = socket;
+  }
+  
+  async update(id: string, data: T, updateFn: (data: T) => void) {
+    // Apply optimistically
+    updateFn(data);
+    
+    // Track pending
+    this.pendingUpdates.set(id, data);
+    
+    // Send to server
+    this.socket.emit('update', { id, data }, (response: any) => {
+      if (response.success) {
+        this.pendingUpdates.delete(id);
+      } else {
+        // Rollback
+        this.pendingUpdates.delete(id);
+        // Revert UI
+      }
+    });
+  }
+}
+```
+
+## Conflict Resolution
+
+### **Last-Write-Wins with Vector Clocks**
+```typescript
+interface VectorClock {
+  [clientId: string]: number;
+}
+
+class ConflictResolver {
+  compare(clock1: VectorClock, clock2: VectorClock): 'before' | 'after' | 'concurrent' {
+    let before = false;
+    let after = false;
+    
+    const allKeys = new Set([...Object.keys(clock1), ...Object.keys(clock2)]);
+    
+    for (const key of allKeys) {
+      const v1 = clock1[key] || 0;
+      const v2 = clock2[key] || 0;
+      
+      if (v1 < v2) after = true;
+      if (v1 > v2) before = true;
+    }
+    
+    if (before && !after) return 'before';
+    if (after && !before) return 'after';
+    return 'concurrent';
+  }
+  
+  resolve(op1: any, op2: any): any {
+    const comparison = this.compare(op1.clock, op2.clock);
+    
+    if (comparison === 'concurrent') {
+      // Use timestamp as tiebreaker
+      return op1.timestamp > op2.timestamp ? op1 : op2;
+    }
+    
+    return comparison === 'after' ? op1 : op2;
+  }
+}
+```
+
+## Learning & Adaptation
+
+The skill tracks and learns from:
+- Collaboration patterns
+- Conflict frequency
+- Network latency
+- User activity patterns
+- Sync performance
+
+And automatically suggests:
+- Optimal sync intervals
+- Conflict resolution strategies
+- Presence update frequency
+- Connection retry policies
+- Cache strategies
+
+---
+**Status:** Production Ready | Self-Improving | Real-time Optimized
