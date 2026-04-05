@@ -1,0 +1,704 @@
+# Edge Computing & IoT Master Skill
+**Version:** 1.0.0  
+**Type:** Self-Improving | Edge Intelligence | Real-Time Processing
+
+## Core Purpose
+Design and deploy edge computing solutions, IoT systems, and distributed real-time processing with intelligent device orchestration and adaptive optimization.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track device performance patterns
+  - Optimize edge deployment strategies
+  - Learn from network conditions
+  - Adapt resource allocation
+  - Evolve based on latency requirements
+  - Remember successful configurations
+```
+
+## Edge Architecture Patterns
+
+### **Intelligent Edge Node**
+```python
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass, field
+from enum import Enum
+import asyncio
+import time
+from collections import deque
+
+class EdgeNodeType(Enum):
+    GATEWAY = "gateway"
+    COMPUTE = "compute"
+    STORAGE = "storage"
+    HYBRID = "hybrid"
+
+class ProcessingMode(Enum):
+    REAL_TIME = "real_time"
+    NEAR_REAL_TIME = "near_real_time"
+    BATCH = "batch"
+
+@dataclass
+class EdgeDevice:
+    """Edge device representation"""
+    device_id: str
+    device_type: EdgeNodeType
+    capabilities: Dict[str, Any]
+    resources: Dict[str, float] = field(default_factory=dict)
+    location: Dict[str, float] = field(default_factory=dict)
+    status: str = "active"
+    
+    def __post_init__(self):
+        if not self.resources:
+            self.resources = {
+                "cpu": 0.0,
+                "memory": 0.0,
+                "storage": 0.0,
+                "network": 0.0
+            }
+
+@dataclass
+class EdgeTask:
+    """Task to be processed at edge"""
+    task_id: str
+    task_type: str
+    data: Any
+    priority: int = 1
+    latency_requirement: float = 1.0  # seconds
+    processing_mode: ProcessingMode = ProcessingMode.REAL_TIME
+    created_at: float = field(default_factory=time.time)
+
+class EdgeComputeNode:
+    """Smart edge computing node with adaptive processing"""
+    
+    def __init__(self, device: EdgeDevice):
+        self.device = device
+        self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue()
+        self.processing_stats: Dict[str, Any] = {
+            'total_tasks': 0,
+            'completed_tasks': 0,
+            'failed_tasks': 0,
+            'avg_latency': 0.0
+        }
+        self.model_cache: Dict[str, Any] = {}
+        self.data_buffer: deque = deque(maxlen=1000)
+    
+    async def process_task(self, task: EdgeTask) -> Dict[str, Any]:
+        """Process task with adaptive optimization"""
+        start_time = time.time()
+        
+        try:
+            # Determine processing strategy
+            if task.latency_requirement < 0.1:
+                # Ultra low latency - use cached model/data
+                result = await self._fast_path_processing(task)
+            elif task.latency_requirement < 1.0:
+                # Low latency - optimized processing
+                result = await self._optimized_processing(task)
+            else:
+                # Normal processing
+                result = await self._standard_processing(task)
+            
+            latency = time.time() - start_time
+            
+            # Update stats
+            self._update_stats(task, latency, success=True)
+            
+            return {
+                'task_id': task.task_id,
+                'result': result,
+                'latency': latency,
+                'device_id': self.device.device_id,
+                'timestamp': time.time()
+            }
+        
+        except Exception as e:
+            self._update_stats(task, time.time() - start_time, success=False)
+            return {
+                'task_id': task.task_id,
+                'error': str(e),
+                'device_id': self.device.device_id
+            }
+    
+    async def _fast_path_processing(self, task: EdgeTask) -> Any:
+        """Ultra-fast processing for time-critical tasks"""
+        # Use pre-loaded models and cached data
+        if task.task_type in self.model_cache:
+            model = self.model_cache[task.task_type]
+            return await self._run_inference(model, task.data)
+        
+        # Fallback to simple processing
+        return self._simple_transform(task.data)
+    
+    async def _optimized_processing(self, task: EdgeTask) -> Any:
+        """Optimized processing with resource management"""
+        # Check resource availability
+        if self._has_available_resources():
+            return await self._full_processing(task)
+        else:
+            # Offload to cloud or defer
+            return await self._lightweight_processing(task)
+    
+    async def _standard_processing(self, task: EdgeTask) -> Any:
+        """Standard processing pipeline"""
+        # Full processing capability
+        return await self._full_processing(task)
+    
+    async def _run_inference(self, model: Any, data: Any) -> Any:
+        """Run ML inference on edge"""
+        # Simulate inference
+        await asyncio.sleep(0.01)
+        return {"prediction": "result", "confidence": 0.95}
+    
+    def _simple_transform(self, data: Any) -> Any:
+        """Simple data transformation"""
+        return {"processed": data}
+    
+    async def _full_processing(self, task: EdgeTask) -> Any:
+        """Full processing pipeline"""
+        # Pre-processing
+        preprocessed = self._preprocess(task.data)
+        
+        # Main processing
+        result = await self._process(preprocessed, task.task_type)
+        
+        # Post-processing
+        final_result = self._postprocess(result)
+        
+        return final_result
+    
+    async def _lightweight_processing(self, task: EdgeTask) -> Any:
+        """Lightweight processing for resource-constrained scenarios"""
+        return {"processed": task.data, "mode": "lightweight"}
+    
+    def _preprocess(self, data: Any) -> Any:
+        """Preprocess data"""
+        return data
+    
+    async def _process(self, data: Any, task_type: str) -> Any:
+        """Main processing logic"""
+        await asyncio.sleep(0.05)  # Simulate processing
+        return {"result": data}
+    
+    def _postprocess(self, data: Any) -> Any:
+        """Post-process results"""
+        return data
+    
+    def _has_available_resources(self) -> bool:
+        """Check if resources are available"""
+        return (self.device.resources['cpu'] < 0.8 and
+                self.device.resources['memory'] < 0.8)
+    
+    def _update_stats(self, task: EdgeTask, latency: float, success: bool):
+        """Update processing statistics"""
+        self.processing_stats['total_tasks'] += 1
+        
+        if success:
+            self.processing_stats['completed_tasks'] += 1
+        else:
+            self.processing_stats['failed_tasks'] += 1
+        
+        # Update average latency
+        total = self.processing_stats['total_tasks']
+        avg = self.processing_stats['avg_latency']
+        self.processing_stats['avg_latency'] = ((avg * (total - 1)) + latency) / total
+    
+    def load_model(self, model_name: str, model: Any):
+        """Load ML model into cache"""
+        self.model_cache[model_name] = model
+    
+    def get_health_status(self) -> Dict[str, Any]:
+        """Get node health status"""
+        return {
+            'device_id': self.device.device_id,
+            'status': self.device.status,
+            'resources': self.device.resources,
+            'stats': self.processing_stats,
+            'queue_size': self.task_queue.qsize(),
+            'cache_size': len(self.model_cache)
+        }
+```
+
+### **Edge Orchestrator**
+```python
+class EdgeOrchestrator:
+    """Orchestrate tasks across edge devices"""
+    
+    def __init__(self):
+        self.nodes: Dict[str, EdgeComputeNode] = {}
+        self.task_routing_table: Dict[str, str] = {}
+        self.performance_history: List[Dict] = []
+    
+    def register_node(self, node: EdgeComputeNode):
+        """Register edge node"""
+        self.nodes[node.device.device_id] = node
+    
+    async def submit_task(self, task: EdgeTask) -> Dict[str, Any]:
+        """Submit task for processing"""
+        # Select optimal node
+        node_id = self._select_optimal_node(task)
+        
+        if not node_id:
+            raise Exception("No available node for task")
+        
+        node = self.nodes[node_id]
+        
+        # Process task
+        result = await node.process_task(task)
+        
+        # Record performance
+        self._record_performance(task, result, node_id)
+        
+        return result
+    
+    def _select_optimal_node(self, task: EdgeTask) -> Optional[str]:
+        """Select optimal node for task using intelligent routing"""
+        candidates = []
+        
+        for node_id, node in self.nodes.items():
+            if node.device.status != "active":
+                continue
+            
+            # Check if node can handle task type
+            if task.task_type not in node.device.capabilities:
+                continue
+            
+            # Calculate score based on multiple factors
+            score = self._calculate_node_score(node, task)
+            candidates.append((node_id, score))
+        
+        if not candidates:
+            return None
+        
+        # Return node with highest score
+        return max(candidates, key=lambda x: x[1])[0]
+    
+    def _calculate_node_score(self, node: EdgeComputeNode, task: EdgeTask) -> float:
+        """Calculate node suitability score"""
+        score = 0.0
+        
+        # Resource availability (40%)
+        cpu_avail = 1.0 - node.device.resources['cpu']
+        mem_avail = 1.0 - node.device.resources['memory']
+        score += (cpu_avail + mem_avail) * 0.2
+        
+        # Average latency performance (30%)
+        avg_latency = node.processing_stats['avg_latency']
+        if avg_latency > 0:
+            latency_score = min(1.0, task.latency_requirement / avg_latency)
+            score += latency_score * 0.3
+        
+        # Success rate (20%)
+        total_tasks = node.processing_stats['total_tasks']
+        if total_tasks > 0:
+            success_rate = node.processing_stats['completed_tasks'] / total_tasks
+            score += success_rate * 0.2
+        
+        # Queue size (10%)
+        queue_penalty = min(1.0, node.task_queue.qsize() / 100)
+        score += (1.0 - queue_penalty) * 0.1
+        
+        return score
+    
+    def _record_performance(self, task: EdgeTask, result: Dict, node_id: str):
+        """Record task performance for learning"""
+        self.performance_history.append({
+            'task_id': task.task_id,
+            'task_type': task.task_type,
+            'node_id': node_id,
+            'latency': result.get('latency', 0),
+            'success': 'error' not in result,
+            'timestamp': time.time()
+        })
+    
+    def get_system_health(self) -> Dict[str, Any]:
+        """Get overall system health"""
+        active_nodes = sum(1 for n in self.nodes.values() if n.device.status == "active")
+        
+        total_completed = sum(n.processing_stats['completed_tasks'] for n in self.nodes.values())
+        total_failed = sum(n.processing_stats['failed_tasks'] for n in self.nodes.values())
+        
+        return {
+            'total_nodes': len(self.nodes),
+            'active_nodes': active_nodes,
+            'total_completed_tasks': total_completed,
+            'total_failed_tasks': total_failed,
+            'success_rate': total_completed / (total_completed + total_failed) if (total_completed + total_failed) > 0 else 0
+        }
+```
+
+## IoT Device Management
+
+### **IoT Device Manager**
+```python
+from typing import Protocol
+import json
+
+class IoTDevice(Protocol):
+    """IoT device protocol"""
+    device_id: str
+    device_type: str
+    
+    async def read_sensor(self) -> Dict[str, Any]: ...
+    async def send_command(self, command: str, params: Dict) -> bool: ...
+    async def update_firmware(self, version: str) -> bool: ...
+
+@dataclass
+class SensorReading:
+    """Sensor data reading"""
+    device_id: str
+    sensor_type: str
+    value: float
+    unit: str
+    timestamp: float = field(default_factory=time.time)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+class IoTDeviceManager:
+    """Manage IoT devices and data collection"""
+    
+    def __init__(self):
+        self.devices: Dict[str, IoTDevice] = {}
+        self.readings: deque = deque(maxlen=10000)
+        self.alerts: List[Dict] = []
+    
+    def register_device(self, device: IoTDevice):
+        """Register IoT device"""
+        self.devices[device.device_id] = device
+    
+    async def collect_data(self, device_id: str) -> SensorReading:
+        """Collect data from device"""
+        if device_id not in self.devices:
+            raise ValueError(f"Device not found: {device_id}")
+        
+        device = self.devices[device_id]
+        data = await device.read_sensor()
+        
+        reading = SensorReading(
+            device_id=device_id,
+            sensor_type=device.device_type,
+            value=data.get('value', 0),
+            unit=data.get('unit', ''),
+            metadata=data.get('metadata', {})
+        )
+        
+        self.readings.append(reading)
+        
+        # Check for anomalies
+        self._check_anomalies(reading)
+        
+        return reading
+    
+    async def collect_all_data(self) -> List[SensorReading]:
+        """Collect data from all devices"""
+        tasks = [
+            self.collect_data(device_id)
+            for device_id in self.devices.keys()
+        ]
+        return await asyncio.gather(*tasks)
+    
+    def _check_anomalies(self, reading: SensorReading):
+        """Check for anomalous readings"""
+        # Get recent readings for this sensor
+        recent = [r for r in self.readings if r.device_id == reading.device_id]
+        
+        if len(recent) < 10:
+            return
+        
+        # Calculate statistics
+        values = [r.value for r in recent[-10:]]
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        std_dev = variance ** 0.5
+        
+        # Check if current reading is anomalous (> 3 standard deviations)
+        if abs(reading.value - mean) > 3 * std_dev:
+            self.alerts.append({
+                'type': 'anomaly',
+                'device_id': reading.device_id,
+                'value': reading.value,
+                'expected_range': (mean - 3 * std_dev, mean + 3 * std_dev),
+                'timestamp': reading.timestamp
+            })
+    
+    def get_device_status(self, device_id: str) -> Dict[str, Any]:
+        """Get device status and recent readings"""
+        recent_readings = [r for r in self.readings if r.device_id == device_id][-10:]
+        
+        return {
+            'device_id': device_id,
+            'recent_readings': recent_readings,
+            'reading_count': len([r for r in self.readings if r.device_id == device_id]),
+            'last_reading': recent_readings[-1] if recent_readings else None
+        }
+```
+
+## Edge ML Inference
+
+### **TensorFlow Lite Integration**
+```python
+import numpy as np
+
+class EdgeMLInference:
+    """ML inference at the edge with TensorFlow Lite"""
+    
+    def __init__(self):
+        self.models: Dict[str, Any] = {}
+        self.inference_stats: Dict[str, Dict] = {}
+    
+    def load_tflite_model(self, model_name: str, model_path: str):
+        """Load TensorFlow Lite model"""
+        try:
+            import tensorflow as tf
+            
+            # Load TFLite model
+            interpreter = tf.lite.Interpreter(model_path=model_path)
+            interpreter.allocate_tensors()
+            
+            # Get input and output details
+            input_details = interpreter.get_input_details()
+            output_details = interpreter.get_output_details()
+            
+            self.models[model_name] = {
+                'interpreter': interpreter,
+                'input_details': input_details,
+                'output_details': output_details
+            }
+            
+            self.inference_stats[model_name] = {
+                'total_inferences': 0,
+                'avg_latency': 0.0
+            }
+            
+        except Exception as e:
+            raise Exception(f"Failed to load model: {e}")
+    
+    async def run_inference(self, model_name: str, input_data: np.ndarray) -> np.ndarray:
+        """Run inference on edge device"""
+        if model_name not in self.models:
+            raise ValueError(f"Model not loaded: {model_name}")
+        
+        start_time = time.time()
+        
+        model = self.models[model_name]
+        interpreter = model['interpreter']
+        input_details = model['input_details']
+        output_details = model['output_details']
+        
+        # Set input tensor
+        interpreter.set_tensor(input_details[0]['index'], input_data)
+        
+        # Run inference
+        interpreter.invoke()
+        
+        # Get output tensor
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        
+        # Update stats
+        latency = time.time() - start_time
+        self._update_inference_stats(model_name, latency)
+        
+        return output_data
+    
+    def _update_inference_stats(self, model_name: str, latency: float):
+        """Update inference statistics"""
+        stats = self.inference_stats[model_name]
+        stats['total_inferences'] += 1
+        
+        total = stats['total_inferences']
+        avg = stats['avg_latency']
+        stats['avg_latency'] = ((avg * (total - 1)) + latency) / total
+    
+    def optimize_model(self, model_name: str) -> Dict[str, Any]:
+        """Suggest model optimizations based on performance"""
+        if model_name not in self.inference_stats:
+            return {}
+        
+        stats = self.inference_stats[model_name]
+        avg_latency = stats['avg_latency']
+        
+        suggestions = []
+        
+        if avg_latency > 0.1:
+            suggestions.append("Consider quantization to reduce latency")
+        
+        if avg_latency > 0.5:
+            suggestions.append("Model may be too large for edge deployment")
+        
+        return {
+            'model_name': model_name,
+            'avg_latency': avg_latency,
+            'total_inferences': stats['total_inferences'],
+            'optimization_suggestions': suggestions
+        }
+```
+
+## MQTT Integration
+
+### **MQTT Edge Gateway**
+```python
+import json
+
+class MQTTEdgeGateway:
+    """MQTT gateway for edge devices"""
+    
+    def __init__(self, broker_url: str, port: int = 1883):
+        self.broker_url = broker_url
+        self.port = port
+        self.client = None
+        self.subscriptions: Dict[str, List] = {}
+        self.message_queue: asyncio.Queue = asyncio.Queue()
+    
+    async def connect(self, client_id: str):
+        """Connect to MQTT broker"""
+        try:
+            import paho.mqtt.client as mqtt
+            
+            self.client = mqtt.Client(client_id)
+            self.client.on_connect = self._on_connect
+            self.client.on_message = self._on_message
+            
+            self.client.connect(self.broker_url, self.port)
+            self.client.loop_start()
+            
+        except Exception as e:
+            raise Exception(f"Failed to connect: {e}")
+    
+    def _on_connect(self, client, userdata, flags, rc):
+        """Handle connection"""
+        print(f"Connected with result code {rc}")
+        
+        # Resubscribe to topics
+        for topic in self.subscriptions.keys():
+            client.subscribe(topic)
+    
+    def _on_message(self, client, userdata, msg):
+        """Handle incoming message"""
+        asyncio.create_task(self.message_queue.put({
+            'topic': msg.topic,
+            'payload': msg.payload.decode(),
+            'timestamp': time.time()
+        }))
+    
+    def subscribe(self, topic: str, callback: callable):
+        """Subscribe to topic"""
+        if topic not in self.subscriptions:
+            self.subscriptions[topic] = []
+            self.client.subscribe(topic)
+        
+        self.subscriptions[topic].append(callback)
+    
+    def publish(self, topic: str, payload: Dict[str, Any], qos: int = 1):
+        """Publish message"""
+        self.client.publish(topic, json.dumps(payload), qos=qos)
+    
+    async def process_messages(self):
+        """Process incoming messages"""
+        while True:
+            message = await self.message_queue.get()
+            topic = message['topic']
+            
+            if topic in self.subscriptions:
+                payload = json.loads(message['payload'])
+                
+                for callback in self.subscriptions[topic]:
+                    await callback(topic, payload)
+```
+
+## Edge Analytics
+
+### **Real-Time Stream Processing**
+```python
+from collections import defaultdict
+import statistics
+
+class EdgeStreamProcessor:
+    """Real-time stream processing at the edge"""
+    
+    def __init__(self, window_size: int = 60):
+        self.window_size = window_size  # seconds
+        self.streams: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.aggregations: Dict[str, Dict] = {}
+    
+    def ingest(self, stream_id: str, value: float):
+        """Ingest data point"""
+        self.streams[stream_id].append({
+            'value': value,
+            'timestamp': time.time()
+        })
+        
+        # Update aggregations
+        self._update_aggregations(stream_id)
+    
+    def _update_aggregations(self, stream_id: str):
+        """Update stream aggregations"""
+        stream = self.streams[stream_id]
+        current_time = time.time()
+        
+        # Filter to window
+        window_data = [
+            point for point in stream
+            if current_time - point['timestamp'] <= self.window_size
+        ]
+        
+        if not window_data:
+            return
+        
+        values = [p['value'] for p in window_data]
+        
+        self.aggregations[stream_id] = {
+            'count': len(values),
+            'min': min(values),
+            'max': max(values),
+            'mean': statistics.mean(values),
+            'median': statistics.median(values),
+            'stdev': statistics.stdev(values) if len(values) > 1 else 0,
+            'window_size': self.window_size
+        }
+    
+    def get_aggregations(self, stream_id: str) -> Dict[str, Any]:
+        """Get current aggregations"""
+        return self.aggregations.get(stream_id, {})
+    
+    def detect_patterns(self, stream_id: str) -> List[str]:
+        """Detect patterns in stream"""
+        patterns = []
+        
+        if stream_id not in self.aggregations:
+            return patterns
+        
+        agg = self.aggregations[stream_id]
+        
+        # Trend detection
+        stream = self.streams[stream_id]
+        if len(stream) >= 10:
+            recent_values = [p['value'] for p in list(stream)[-10:]]
+            if all(recent_values[i] < recent_values[i+1] for i in range(len(recent_values)-1)):
+                patterns.append("increasing_trend")
+            elif all(recent_values[i] > recent_values[i+1] for i in range(len(recent_values)-1)):
+                patterns.append("decreasing_trend")
+        
+        # High variability
+        if agg.get('stdev', 0) > agg.get('mean', 0):
+            patterns.append("high_variability")
+        
+        return patterns
+```
+
+## Learning & Optimization
+
+Tracks:
+- Device performance metrics
+- Network latency patterns
+- Resource utilization
+- Task completion rates
+- Inference performance
+
+Adapts by:
+- Optimizing task routing
+- Adjusting processing strategies
+- Managing model deployment
+- Tuning resource allocation
+- Predicting failures
+
+---
+**Status:** Production Ready | Self-Improving | Edge-Optimized

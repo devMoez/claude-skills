@@ -1,0 +1,873 @@
+# Cloud-Native Kubernetes Master Skill
+**Version:** 1.0.0  
+**Type:** Self-Improving | Container Orchestration | GitOps | Service Mesh
+
+## Core Purpose
+Design, deploy, and manage production-grade Kubernetes clusters with intelligent automation, self-healing capabilities, and cloud-native best practices.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track deployment patterns
+  - Learn from cluster metrics
+  - Optimize resource allocation
+  - Adapt scaling strategies
+  - Evolve based on incidents
+  - Remember successful configurations
+```
+
+## Kubernetes Architecture
+
+### **Production-Ready Deployments**
+```yaml
+# High-availability deployment with auto-scaling
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-application
+  namespace: production
+  labels:
+    app: web-app
+    version: v1.0.0
+    environment: production
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Anti-affinity for high availability
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - web-app
+              topologyKey: kubernetes.io/hostname
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      
+      # Init container for setup
+      initContainers:
+      - name: init-db-check
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
+      
+      containers:
+      - name: web-app
+        image: myregistry.io/web-app:v1.0.0
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+        
+        # Environment configuration
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: db.host
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: db.password
+        
+        # Volume mounts
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+          readOnly: true
+        - name: cache
+          mountPath: /tmp/cache
+      
+      volumes:
+      - name: config
+        configMap:
+          name: app-config
+      - name: cache
+        emptyDir:
+          sizeLimit: 1Gi
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web-app-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web-application
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "1000"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-service
+  namespace: production
+  labels:
+    app: web-app
+spec:
+  type: ClusterIP
+  selector:
+    app: web-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+
+---
+# Ingress with TLS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-app-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+spec:
+  tls:
+  - hosts:
+    - app.example.com
+    secretName: web-app-tls
+  rules:
+  - host: app.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-app-service
+            port:
+              number: 80
+
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-app-network-policy
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: production
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-app-pdb
+  namespace: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: web-app
+```
+
+### **StatefulSet for Databases**
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-cluster
+  namespace: production
+spec:
+  serviceName: postgres-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: "myapp"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "fast-ssd"
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+## GitOps with ArgoCD
+
+### **ArgoCD Application**
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web-application
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: production
+  
+  source:
+    repoURL: https://github.com/myorg/k8s-manifests
+    targetRevision: main
+    path: applications/web-app
+    helm:
+      valueFiles:
+      - values-production.yaml
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health checks
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+
+---
+# ArgoCD Project
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: production
+  namespace: argocd
+spec:
+  description: Production applications
+  
+  sourceRepos:
+  - 'https://github.com/myorg/*'
+  
+  destinations:
+  - namespace: production
+    server: https://kubernetes.default.svc
+  - namespace: monitoring
+    server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  
+  namespaceResourceBlacklist:
+  - group: ''
+    kind: ResourceQuota
+  - group: ''
+    kind: LimitRange
+```
+
+## Service Mesh (Istio)
+
+### **Istio Virtual Service & Destination Rule**
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: web-app-routes
+  namespace: production
+spec:
+  hosts:
+  - web-app-service
+  http:
+  # Canary deployment - 90% v1, 10% v2
+  - match:
+    - headers:
+        user-agent:
+          regex: ".*Chrome.*"
+    route:
+    - destination:
+        host: web-app-service
+        subset: v1
+      weight: 90
+    - destination:
+        host: web-app-service
+        subset: v2
+      weight: 10
+    timeout: 10s
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+  
+  # Default route
+  - route:
+    - destination:
+        host: web-app-service
+        subset: v1
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: web-app-destination
+  namespace: production
+spec:
+  host: web-app-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+    loadBalancer:
+      simple: LEAST_REQUEST
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 40
+  subsets:
+  - name: v1
+    labels:
+      version: v1.0.0
+  - name: v2
+    labels:
+      version: v2.0.0
+
+---
+# Circuit Breaker
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: circuit-breaker
+  namespace: production
+spec:
+  host: external-api-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 10
+      http:
+        http1MaxPendingRequests: 1
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutiveErrors: 1
+      interval: 1s
+      baseEjectionTime: 3m
+      maxEjectionPercent: 100
+```
+
+## Monitoring & Observability
+
+### **Prometheus ServiceMonitor**
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: web-app-metrics
+  namespace: production
+  labels:
+    app: web-app
+spec:
+  selector:
+    matchLabels:
+      app: web-app
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http
+
+---
+# PrometheusRule for Alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: web-app-alerts
+  namespace: production
+spec:
+  groups:
+  - name: web-app
+    interval: 30s
+    rules:
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate is {{ $value }} for {{ $labels.instance }}"
+    
+    - alert: HighMemoryUsage
+      expr: container_memory_usage_bytes{pod=~"web-app.*"} / container_spec_memory_limit_bytes > 0.9
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage"
+        description: "Memory usage is {{ $value }}% for {{ $labels.pod }}"
+    
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pod is crash looping"
+        description: "Pod {{ $labels.pod }} is restarting frequently"
+```
+
+## Helm Charts
+
+### **Production Helm Chart**
+```yaml
+# Chart.yaml
+apiVersion: v2
+name: web-application
+description: Production-grade web application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+dependencies:
+- name: postgresql
+  version: "12.x.x"
+  repository: "https://charts.bitnami.com/bitnami"
+  condition: postgresql.enabled
+- name: redis
+  version: "17.x.x"
+  repository: "https://charts.bitnami.com/bitnami"
+  condition: redis.enabled
+
+---
+# values.yaml
+replicaCount: 3
+
+image:
+  repository: myregistry.io/web-app
+  tag: "v1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+  - host: app.example.com
+    paths:
+    - path: /
+      pathType: Prefix
+  tls:
+  - secretName: web-app-tls
+    hosts:
+    - app.example.com
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+postgresql:
+  enabled: true
+  auth:
+    username: myapp
+    database: myapp
+  primary:
+    persistence:
+      size: 10Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+  master:
+    persistence:
+      size: 2Gi
+```
+
+## Cluster Management Scripts
+
+### **Python Kubernetes Client**
+```python
+from kubernetes import client, config, watch
+from typing import List, Dict, Any
+import logging
+
+class KubernetesManager:
+    """Intelligent Kubernetes cluster management"""
+    
+    def __init__(self, kubeconfig_path: str = None):
+        if kubeconfig_path:
+            config.load_kube_config(kubeconfig_path)
+        else:
+            config.load_incluster_config()
+        
+        self.v1 = client.CoreV1Api()
+        self.apps_v1 = client.AppsV1Api()
+        self.autoscaling_v2 = client.AutoscalingV2Api()
+        self.logger = logging.getLogger(__name__)
+    
+    def get_pod_status(self, namespace: str = "default") -> List[Dict[str, Any]]:
+        """Get status of all pods in namespace"""
+        pods = self.v1.list_namespaced_pod(namespace)
+        
+        pod_status = []
+        for pod in pods.items:
+            pod_status.append({
+                'name': pod.metadata.name,
+                'namespace': pod.metadata.namespace,
+                'status': pod.status.phase,
+                'ready': sum(1 for c in pod.status.container_statuses if c.ready) 
+                         if pod.status.container_statuses else 0,
+                'restarts': sum(c.restart_count for c in pod.status.container_statuses)
+                           if pod.status.container_statuses else 0,
+                'node': pod.spec.node_name,
+                'created': pod.metadata.creation_timestamp
+            })
+        
+        return pod_status
+    
+    def scale_deployment(self, name: str, namespace: str, replicas: int):
+        """Scale deployment to specified replicas"""
+        deployment = self.apps_v1.read_namespaced_deployment(name, namespace)
+        deployment.spec.replicas = replicas
+        
+        self.apps_v1.patch_namespaced_deployment(
+            name=name,
+            namespace=namespace,
+            body=deployment
+        )
+        
+        self.logger.info(f"Scaled {name} to {replicas} replicas")
+    
+    def rolling_restart(self, deployment_name: str, namespace: str):
+        """Perform rolling restart of deployment"""
+        import datetime
+        
+        deployment = self.apps_v1.read_namespaced_deployment(deployment_name, namespace)
+        
+        if not deployment.spec.template.metadata.annotations:
+            deployment.spec.template.metadata.annotations = {}
+        
+        deployment.spec.template.metadata.annotations['kubectl.kubernetes.io/restartedAt'] = \
+            datetime.datetime.now().isoformat()
+        
+        self.apps_v1.patch_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace,
+            body=deployment
+        )
+        
+        self.logger.info(f"Rolling restart initiated for {deployment_name}")
+    
+    def watch_pod_events(self, namespace: str = "default"):
+        """Watch pod events in real-time"""
+        w = watch.Watch()
+        
+        for event in w.stream(self.v1.list_namespaced_pod, namespace=namespace):
+            event_type = event['type']
+            pod = event['object']
+            
+            self.logger.info(f"Event: {event_type} - Pod: {pod.metadata.name} - Status: {pod.status.phase}")
+    
+    def get_node_resources(self) -> List[Dict[str, Any]]:
+        """Get resource usage for all nodes"""
+        nodes = self.v1.list_node()
+        
+        node_resources = []
+        for node in nodes.items:
+            allocatable = node.status.allocatable
+            capacity = node.status.capacity
+            
+            node_resources.append({
+                'name': node.metadata.name,
+                'cpu_allocatable': allocatable.get('cpu'),
+                'memory_allocatable': allocatable.get('memory'),
+                'cpu_capacity': capacity.get('cpu'),
+                'memory_capacity': capacity.get('memory'),
+                'pods': capacity.get('pods')
+            })
+        
+        return node_resources
+    
+    def auto_heal_failing_pods(self, namespace: str = "default"):
+        """Auto-heal pods in CrashLoopBackOff or Error state"""
+        pods = self.v1.list_namespaced_pod(namespace)
+        
+        for pod in pods.items:
+            if pod.status.phase in ['Failed', 'Unknown']:
+                # Delete failed pod to trigger recreation
+                self.v1.delete_namespaced_pod(
+                    name=pod.metadata.name,
+                    namespace=namespace
+                )
+                self.logger.info(f"Deleted failed pod: {pod.metadata.name}")
+            
+            elif pod.status.container_statuses:
+                for container in pod.status.container_statuses:
+                    if container.state.waiting and \
+                       container.state.waiting.reason == 'CrashLoopBackOff':
+                        # Delete crashlooping pod
+                        self.v1.delete_namespaced_pod(
+                            name=pod.metadata.name,
+                            namespace=namespace
+                        )
+                        self.logger.warning(f"Deleted crashlooping pod: {pod.metadata.name}")
+```
+
+## Learning & Optimization
+
+Tracks:
+- Resource utilization patterns
+- Pod failure rates
+- Scaling efficiency
+- Network latency
+- Deployment success rates
+
+Adapts by:
+- Optimizing resource requests/limits
+- Tuning HPA parameters
+- Improving health checks
+- Enhancing network policies
+- Refining deployment strategies
+
+---
+**Status:** Production Ready | Self-Healing | Cloud-Native
