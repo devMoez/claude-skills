@@ -250,7 +250,7 @@ If you find these skills helpful, please consider giving us a star! ⭐
 - **Issues:** [GitHub Issues](https://github.com/devMoez/claude-skills/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/devMoez/claude-skills/discussions)
 - **Email:** moezfsdx942@gmail.com
-- **Twitter:** [@devMoez](https://twitter.com/devMoez)
+- **Twitter:** [@am_moezzz](https://twitter.com/am_moezzz)
 
 ---
 
