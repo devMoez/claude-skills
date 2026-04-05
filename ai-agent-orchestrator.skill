@@ -1,0 +1,825 @@
+# AI Agent Orchestrator Skill
+**Version:** 1.0.0  
+**Type:** Self-Improving | Multi-Agent Systems | Autonomous Workflows
+
+## Core Purpose
+Design, deploy, and orchestrate intelligent AI agent systems with autonomous task execution, inter-agent communication, and adaptive workflow optimization.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track agent interaction patterns
+  - Optimize task delegation strategies
+  - Learn from workflow outcomes
+  - Adapt communication protocols
+  - Evolve coordination mechanisms
+  - Remember successful agent configurations
+```
+
+## Agent Architectures
+
+### **Multi-Agent Framework**
+```python
+from typing import Dict, List, Any, Optional, Callable
+from dataclasses import dataclass, field
+from enum import Enum
+import asyncio
+from abc import ABC, abstractmethod
+
+class AgentRole(Enum):
+    COORDINATOR = "coordinator"
+    EXECUTOR = "executor"
+    ANALYZER = "analyzer"
+    VALIDATOR = "validator"
+    OPTIMIZER = "optimizer"
+
+class MessageType(Enum):
+    TASK = "task"
+    RESULT = "result"
+    QUERY = "query"
+    BROADCAST = "broadcast"
+    ERROR = "error"
+
+@dataclass
+class Message:
+    """Inter-agent communication message"""
+    sender: str
+    recipient: str
+    msg_type: MessageType
+    content: Any
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: float = field(default_factory=lambda: time.time())
+
+@dataclass
+class AgentCapability:
+    """Agent capability definition"""
+    name: str
+    description: str
+    input_schema: Dict[str, Any]
+    output_schema: Dict[str, Any]
+    execute: Callable
+
+class BaseAgent(ABC):
+    """Base agent with communication and task execution"""
+    
+    def __init__(self, agent_id: str, role: AgentRole, capabilities: List[AgentCapability]):
+        self.agent_id = agent_id
+        self.role = role
+        self.capabilities = {cap.name: cap for cap in capabilities}
+        self.message_queue: asyncio.Queue = asyncio.Queue()
+        self.knowledge_base: Dict[str, Any] = {}
+        self.performance_metrics: Dict[str, float] = {}
+        
+    @abstractmethod
+    async def process_task(self, task: Dict[str, Any]) -> Any:
+        """Process assigned task"""
+        pass
+    
+    async def send_message(self, recipient: str, msg_type: MessageType, content: Any):
+        """Send message to another agent"""
+        message = Message(
+            sender=self.agent_id,
+            recipient=recipient,
+            msg_type=msg_type,
+            content=content
+        )
+        await self.orchestrator.route_message(message)
+    
+    async def receive_message(self) -> Message:
+        """Receive message from queue"""
+        return await self.message_queue.get()
+    
+    async def run(self):
+        """Main agent event loop"""
+        while True:
+            message = await self.receive_message()
+            await self.handle_message(message)
+    
+    async def handle_message(self, message: Message):
+        """Handle incoming message"""
+        if message.msg_type == MessageType.TASK:
+            result = await self.process_task(message.content)
+            await self.send_message(
+                message.sender,
+                MessageType.RESULT,
+                result
+            )
+        elif message.msg_type == MessageType.QUERY:
+            response = await self.answer_query(message.content)
+            await self.send_message(message.sender, MessageType.RESULT, response)
+    
+    def update_knowledge(self, key: str, value: Any):
+        """Update agent knowledge base"""
+        self.knowledge_base[key] = value
+    
+    def get_capability(self, name: str) -> Optional[AgentCapability]:
+        """Get agent capability by name"""
+        return self.capabilities.get(name)
+
+class CoordinatorAgent(BaseAgent):
+    """Coordinates multiple agents to complete complex tasks"""
+    
+    def __init__(self, agent_id: str):
+        super().__init__(agent_id, AgentRole.COORDINATOR, [])
+        self.task_queue: List[Dict] = []
+        self.agent_registry: Dict[str, BaseAgent] = {}
+    
+    def register_agent(self, agent: BaseAgent):
+        """Register agent in the system"""
+        self.agent_registry[agent.agent_id] = agent
+        agent.orchestrator = self
+    
+    async def process_task(self, task: Dict[str, Any]) -> Any:
+        """Decompose and delegate task to appropriate agents"""
+        # Task decomposition
+        subtasks = await self.decompose_task(task)
+        
+        # Assign to agents
+        assignments = await self.assign_subtasks(subtasks)
+        
+        # Execute in parallel
+        results = await asyncio.gather(*[
+            self.execute_subtask(agent_id, subtask)
+            for agent_id, subtask in assignments
+        ])
+        
+        # Aggregate results
+        final_result = await self.aggregate_results(results)
+        return final_result
+    
+    async def decompose_task(self, task: Dict[str, Any]) -> List[Dict]:
+        """Break complex task into subtasks"""
+        subtasks = []
+        
+        # Analyze task dependencies
+        task_graph = self.build_task_graph(task)
+        
+        # Topological sort for execution order
+        execution_order = self.topological_sort(task_graph)
+        
+        for node in execution_order:
+            subtasks.append({
+                'id': node,
+                'type': task_graph[node]['type'],
+                'dependencies': task_graph[node].get('dependencies', []),
+                'params': task_graph[node].get('params', {})
+            })
+        
+        return subtasks
+    
+    async def assign_subtasks(self, subtasks: List[Dict]) -> List[tuple]:
+        """Assign subtasks to optimal agents"""
+        assignments = []
+        
+        for subtask in subtasks:
+            # Find agents with required capabilities
+            capable_agents = [
+                agent for agent in self.agent_registry.values()
+                if self.can_handle_task(agent, subtask)
+            ]
+            
+            if not capable_agents:
+                raise ValueError(f"No agent can handle subtask: {subtask}")
+            
+            # Select best agent based on performance metrics
+            best_agent = max(
+                capable_agents,
+                key=lambda a: a.performance_metrics.get(subtask['type'], 0.5)
+            )
+            
+            assignments.append((best_agent.agent_id, subtask))
+        
+        return assignments
+    
+    async def execute_subtask(self, agent_id: str, subtask: Dict) -> Any:
+        """Execute subtask via assigned agent"""
+        await self.send_message(agent_id, MessageType.TASK, subtask)
+        
+        # Wait for result
+        result_message = await self.wait_for_result(agent_id)
+        return result_message.content
+    
+    def can_handle_task(self, agent: BaseAgent, task: Dict) -> bool:
+        """Check if agent can handle task"""
+        task_type = task.get('type')
+        return task_type in agent.capabilities
+    
+    async def route_message(self, message: Message):
+        """Route message to recipient agent"""
+        if message.recipient in self.agent_registry:
+            await self.agent_registry[message.recipient].message_queue.put(message)
+
+class DataProcessorAgent(BaseAgent):
+    """Agent specialized in data processing and transformation"""
+    
+    def __init__(self, agent_id: str):
+        capabilities = [
+            AgentCapability(
+                name="clean_data",
+                description="Clean and normalize data",
+                input_schema={"data": "any"},
+                output_schema={"cleaned_data": "any"},
+                execute=self.clean_data
+            ),
+            AgentCapability(
+                name="transform_data",
+                description="Transform data format",
+                input_schema={"data": "any", "format": "str"},
+                output_schema={"transformed_data": "any"},
+                execute=self.transform_data
+            ),
+        ]
+        super().__init__(agent_id, AgentRole.EXECUTOR, capabilities)
+    
+    async def process_task(self, task: Dict[str, Any]) -> Any:
+        """Process data task"""
+        task_type = task.get('type')
+        capability = self.get_capability(task_type)
+        
+        if not capability:
+            raise ValueError(f"Unknown task type: {task_type}")
+        
+        result = await capability.execute(task.get('params', {}))
+        
+        # Update performance metrics
+        self.performance_metrics[task_type] = self.performance_metrics.get(task_type, 0.5) + 0.1
+        
+        return result
+    
+    async def clean_data(self, params: Dict) -> Dict:
+        """Clean data implementation"""
+        data = params.get('data', [])
+        # Cleaning logic
+        cleaned = [item for item in data if item is not None]
+        return {"cleaned_data": cleaned}
+    
+    async def transform_data(self, params: Dict) -> Dict:
+        """Transform data implementation"""
+        data = params.get('data')
+        format_type = params.get('format', 'json')
+        # Transformation logic
+        return {"transformed_data": data, "format": format_type}
+
+class AnalyzerAgent(BaseAgent):
+    """Agent specialized in data analysis and insights"""
+    
+    def __init__(self, agent_id: str):
+        capabilities = [
+            AgentCapability(
+                name="analyze_patterns",
+                description="Identify patterns in data",
+                input_schema={"data": "list"},
+                output_schema={"patterns": "list"},
+                execute=self.analyze_patterns
+            ),
+            AgentCapability(
+                name="generate_insights",
+                description="Generate insights from analysis",
+                input_schema={"analysis": "dict"},
+                output_schema={"insights": "list"},
+                execute=self.generate_insights
+            ),
+        ]
+        super().__init__(agent_id, AgentRole.ANALYZER, capabilities)
+    
+    async def process_task(self, task: Dict[str, Any]) -> Any:
+        """Process analysis task"""
+        task_type = task.get('type')
+        capability = self.get_capability(task_type)
+        
+        if not capability:
+            raise ValueError(f"Unknown task type: {task_type}")
+        
+        result = await capability.execute(task.get('params', {}))
+        return result
+    
+    async def analyze_patterns(self, params: Dict) -> Dict:
+        """Analyze patterns in data"""
+        data = params.get('data', [])
+        # Pattern detection logic
+        patterns = []
+        # Add pattern detection implementation
+        return {"patterns": patterns}
+    
+    async def generate_insights(self, params: Dict) -> Dict:
+        """Generate insights from analysis"""
+        analysis = params.get('analysis', {})
+        # Insight generation logic
+        insights = []
+        return {"insights": insights}
+
+class ValidatorAgent(BaseAgent):
+    """Agent specialized in validation and quality assurance"""
+    
+    def __init__(self, agent_id: str):
+        capabilities = [
+            AgentCapability(
+                name="validate_data",
+                description="Validate data against schema",
+                input_schema={"data": "any", "schema": "dict"},
+                output_schema={"valid": "bool", "errors": "list"},
+                execute=self.validate_data
+            ),
+        ]
+        super().__init__(agent_id, AgentRole.VALIDATOR, capabilities)
+    
+    async def process_task(self, task: Dict[str, Any]) -> Any:
+        """Process validation task"""
+        task_type = task.get('type')
+        capability = self.get_capability(task_type)
+        
+        if not capability:
+            raise ValueError(f"Unknown task type: {task_type}")
+        
+        result = await capability.execute(task.get('params', {}))
+        return result
+    
+    async def validate_data(self, params: Dict) -> Dict:
+        """Validate data against schema"""
+        data = params.get('data')
+        schema = params.get('schema', {})
+        
+        errors = []
+        # Add validation logic
+        
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors
+        }
+```
+
+### **Agent Orchestration System**
+```python
+from typing import Dict, List, Optional
+import asyncio
+
+class AgentOrchestrator:
+    """Main orchestration system for multi-agent workflows"""
+    
+    def __init__(self):
+        self.coordinator = CoordinatorAgent("coordinator_001")
+        self.agents: Dict[str, BaseAgent] = {}
+        self.workflows: Dict[str, Dict] = {}
+        self.running_tasks: Dict[str, asyncio.Task] = {}
+    
+    def setup_agents(self):
+        """Initialize and register agents"""
+        # Create specialized agents
+        data_processor = DataProcessorAgent("processor_001")
+        analyzer = AnalyzerAgent("analyzer_001")
+        validator = ValidatorAgent("validator_001")
+        
+        # Register agents
+        self.coordinator.register_agent(data_processor)
+        self.coordinator.register_agent(analyzer)
+        self.coordinator.register_agent(validator)
+        
+        self.agents = {
+            "processor": data_processor,
+            "analyzer": analyzer,
+            "validator": validator
+        }
+    
+    async def execute_workflow(self, workflow_name: str, input_data: Dict) -> Any:
+        """Execute predefined workflow"""
+        workflow = self.workflows.get(workflow_name)
+        
+        if not workflow:
+            raise ValueError(f"Workflow not found: {workflow_name}")
+        
+        # Start coordinator with workflow task
+        result = await self.coordinator.process_task({
+            "workflow": workflow_name,
+            "steps": workflow.get('steps', []),
+            "input": input_data
+        })
+        
+        return result
+    
+    def register_workflow(self, name: str, workflow: Dict):
+        """Register new workflow"""
+        self.workflows[name] = workflow
+    
+    async def start_all_agents(self):
+        """Start all agent event loops"""
+        tasks = [
+            asyncio.create_task(agent.run())
+            for agent in self.agents.values()
+        ]
+        await asyncio.gather(*tasks)
+
+# Example usage
+async def main():
+    orchestrator = AgentOrchestrator()
+    orchestrator.setup_agents()
+    
+    # Register data processing workflow
+    orchestrator.register_workflow("data_pipeline", {
+        "steps": [
+            {"type": "clean_data", "agent": "processor"},
+            {"type": "analyze_patterns", "agent": "analyzer"},
+            {"type": "validate_data", "agent": "validator"}
+        ]
+    })
+    
+    # Execute workflow
+    result = await orchestrator.execute_workflow("data_pipeline", {
+        "data": [1, 2, None, 3, 4]
+    })
+    
+    print("Workflow result:", result)
+```
+
+## LangGraph Agent Implementation
+
+### **Stateful Agent with LangGraph**
+```python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict, Annotated, Sequence
+import operator
+
+class AgentState(TypedDict):
+    """State for LangGraph agent"""
+    messages: Annotated[Sequence[str], operator.add]
+    current_step: str
+    context: Dict[str, Any]
+    results: Dict[str, Any]
+    errors: List[str]
+
+def create_research_agent():
+    """Create multi-step research agent with LangGraph"""
+    
+    workflow = StateGraph(AgentState)
+    
+    # Define nodes
+    def plan_research(state: AgentState) -> AgentState:
+        """Plan research steps"""
+        query = state['messages'][-1]
+        
+        # Generate research plan
+        plan = {
+            "steps": [
+                "gather_information",
+                "analyze_sources",
+                "synthesize_findings",
+                "validate_conclusions"
+            ]
+        }
+        
+        state['context']['plan'] = plan
+        state['current_step'] = 'gather_information'
+        return state
+    
+    def gather_information(state: AgentState) -> AgentState:
+        """Gather information from sources"""
+        # Information gathering logic
+        state['results']['sources'] = []
+        state['current_step'] = 'analyze_sources'
+        return state
+    
+    def analyze_sources(state: AgentState) -> AgentState:
+        """Analyze gathered sources"""
+        # Analysis logic
+        state['results']['analysis'] = {}
+        state['current_step'] = 'synthesize_findings'
+        return state
+    
+    def synthesize_findings(state: AgentState) -> AgentState:
+        """Synthesize findings into report"""
+        # Synthesis logic
+        state['results']['report'] = ""
+        state['current_step'] = 'validate_conclusions'
+        return state
+    
+    def validate_conclusions(state: AgentState) -> AgentState:
+        """Validate conclusions"""
+        # Validation logic
+        state['results']['validated'] = True
+        state['current_step'] = 'complete'
+        return state
+    
+    def should_continue(state: AgentState) -> str:
+        """Determine next step"""
+        step = state.get('current_step', '')
+        
+        if step == 'complete':
+            return END
+        
+        return step
+    
+    # Add nodes
+    workflow.add_node("plan", plan_research)
+    workflow.add_node("gather_information", gather_information)
+    workflow.add_node("analyze_sources", analyze_sources)
+    workflow.add_node("synthesize_findings", synthesize_findings)
+    workflow.add_node("validate_conclusions", validate_conclusions)
+    
+    # Add edges
+    workflow.set_entry_point("plan")
+    workflow.add_conditional_edges(
+        "plan",
+        should_continue,
+        {
+            "gather_information": "gather_information",
+            END: END
+        }
+    )
+    workflow.add_conditional_edges("gather_information", should_continue)
+    workflow.add_conditional_edges("analyze_sources", should_continue)
+    workflow.add_conditional_edges("synthesize_findings", should_continue)
+    workflow.add_conditional_edges("validate_conclusions", should_continue)
+    
+    return workflow.compile()
+```
+
+## AutoGen Multi-Agent System
+
+### **AutoGen Collaborative Agents**
+```python
+from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
+
+def create_autogen_team():
+    """Create collaborative agent team with AutoGen"""
+    
+    config_list = [{
+        "model": "gpt-4",
+        "api_key": "your-api-key"
+    }]
+    
+    # Create specialized agents
+    researcher = AssistantAgent(
+        name="Researcher",
+        system_message="""You are a research specialist. 
+        Your role is to gather and analyze information from various sources.
+        Provide comprehensive research findings.""",
+        llm_config={"config_list": config_list}
+    )
+    
+    engineer = AssistantAgent(
+        name="Engineer",
+        system_message="""You are a software engineer.
+        Your role is to design and implement technical solutions.
+        Write clean, efficient code.""",
+        llm_config={"config_list": config_list}
+    )
+    
+    reviewer = AssistantAgent(
+        name="Reviewer",
+        system_message="""You are a code reviewer and quality assurance specialist.
+        Your role is to review code and ensure best practices.
+        Provide constructive feedback.""",
+        llm_config={"config_list": config_list}
+    )
+    
+    user_proxy = UserProxyAgent(
+        name="User",
+        human_input_mode="NEVER",
+        code_execution_config={"work_dir": "workspace"}
+    )
+    
+    # Create group chat
+    group_chat = GroupChat(
+        agents=[researcher, engineer, reviewer, user_proxy],
+        messages=[],
+        max_round=10
+    )
+    
+    manager = GroupChatManager(
+        groupchat=group_chat,
+        llm_config={"config_list": config_list}
+    )
+    
+    return manager, user_proxy
+
+# Usage
+manager, user_proxy = create_autogen_team()
+user_proxy.initiate_chat(
+    manager,
+    message="Build a REST API for user management with authentication"
+)
+```
+
+## CrewAI Role-Based Agents
+
+### **CrewAI Task Management**
+```python
+from crewai import Agent, Task, Crew, Process
+
+def create_development_crew():
+    """Create development crew with specialized roles"""
+    
+    # Define agents
+    product_manager = Agent(
+        role='Product Manager',
+        goal='Define product requirements and prioritize features',
+        backstory="""You are an experienced product manager with expertise
+        in translating user needs into clear technical requirements.""",
+        verbose=True,
+        allow_delegation=True
+    )
+    
+    tech_lead = Agent(
+        role='Technical Lead',
+        goal='Design system architecture and technical approach',
+        backstory="""You are a senior technical lead with deep expertise
+        in system design and best practices.""",
+        verbose=True,
+        allow_delegation=True
+    )
+    
+    developer = Agent(
+        role='Software Developer',
+        goal='Implement features according to specifications',
+        backstory="""You are a skilled developer who writes clean,
+        maintainable code following best practices.""",
+        verbose=True,
+        allow_delegation=False
+    )
+    
+    qa_engineer = Agent(
+        role='QA Engineer',
+        goal='Ensure quality through comprehensive testing',
+        backstory="""You are a meticulous QA engineer who catches bugs
+        and ensures high code quality.""",
+        verbose=True,
+        allow_delegation=False
+    )
+    
+    # Define tasks
+    requirements_task = Task(
+        description="""Analyze the project requirements and create 
+        a detailed specification document with user stories.""",
+        agent=product_manager,
+        expected_output="Detailed requirements document"
+    )
+    
+    design_task = Task(
+        description="""Design the system architecture based on requirements.
+        Include database schema, API design, and component structure.""",
+        agent=tech_lead,
+        expected_output="System design document"
+    )
+    
+    implementation_task = Task(
+        description="""Implement the features according to the design.
+        Write clean, tested code.""",
+        agent=developer,
+        expected_output="Working code implementation"
+    )
+    
+    testing_task = Task(
+        description="""Test the implementation thoroughly.
+        Create test cases and report any issues.""",
+        agent=qa_engineer,
+        expected_output="Test report with results"
+    )
+    
+    # Create crew
+    crew = Crew(
+        agents=[product_manager, tech_lead, developer, qa_engineer],
+        tasks=[requirements_task, design_task, implementation_task, testing_task],
+        process=Process.sequential,
+        verbose=True
+    )
+    
+    return crew
+
+# Usage
+crew = create_development_crew()
+result = crew.kickoff()
+```
+
+## Learning & Optimization
+
+### **Performance Tracking**
+```python
+class AgentPerformanceTracker:
+    """Track and optimize agent performance"""
+    
+    def __init__(self):
+        self.metrics = {}
+        self.optimization_history = []
+    
+    def record_task(self, agent_id: str, task_type: str, duration: float, success: bool):
+        """Record task execution metrics"""
+        if agent_id not in self.metrics:
+            self.metrics[agent_id] = {}
+        
+        if task_type not in self.metrics[agent_id]:
+            self.metrics[agent_id][task_type] = {
+                'count': 0,
+                'successes': 0,
+                'avg_duration': 0,
+                'success_rate': 0
+            }
+        
+        m = self.metrics[agent_id][task_type]
+        m['count'] += 1
+        if success:
+            m['successes'] += 1
+        
+        # Update running average
+        m['avg_duration'] = ((m['avg_duration'] * (m['count'] - 1)) + duration) / m['count']
+        m['success_rate'] = m['successes'] / m['count']
+    
+    def optimize_agent_assignment(self, task_type: str) -> str:
+        """Find best agent for task type"""
+        best_agent = None
+        best_score = 0
+        
+        for agent_id, tasks in self.metrics.items():
+            if task_type in tasks:
+                m = tasks[task_type]
+                # Score = success_rate * (1 / avg_duration)
+                score = m['success_rate'] * (1 / (m['avg_duration'] + 1))
+                
+                if score > best_score:
+                    best_score = score
+                    best_agent = agent_id
+        
+        return best_agent
+```
+
+## Production Patterns
+
+### **Agent Monitoring & Observability**
+```python
+from dataclasses import dataclass
+from datetime import datetime
+import logging
+
+@dataclass
+class AgentEvent:
+    """Agent event for observability"""
+    agent_id: str
+    event_type: str
+    timestamp: datetime
+    details: Dict[str, Any]
+
+class AgentMonitor:
+    """Monitor agent system health and performance"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger('agent_monitor')
+        self.events: List[AgentEvent] = []
+        self.alerts: List[str] = []
+    
+    def log_event(self, agent_id: str, event_type: str, details: Dict):
+        """Log agent event"""
+        event = AgentEvent(
+            agent_id=agent_id,
+            event_type=event_type,
+            timestamp=datetime.now(),
+            details=details
+        )
+        self.events.append(event)
+        self.logger.info(f"{agent_id}: {event_type} - {details}")
+    
+    def check_health(self, agent: BaseAgent) -> bool:
+        """Check agent health status"""
+        # Check message queue size
+        if agent.message_queue.qsize() > 1000:
+            self.alerts.append(f"{agent.agent_id}: High message queue")
+            return False
+        
+        # Check recent errors
+        recent_errors = [
+            e for e in self.events 
+            if e.agent_id == agent.agent_id and e.event_type == 'error'
+            and (datetime.now() - e.timestamp).seconds < 300
+        ]
+        
+        if len(recent_errors) > 10:
+            self.alerts.append(f"{agent.agent_id}: High error rate")
+            return False
+        
+        return True
+```
+
+## Integration Patterns
+
+The skill supports:
+- **LangChain/LangGraph** - Stateful agent workflows
+- **AutoGen** - Collaborative multi-agent conversations
+- **CrewAI** - Role-based agent teams
+- **Custom Agents** - Build from scratch
+- **Hybrid Systems** - Combine multiple frameworks
+
+## Learning & Adaptation
+
+Tracks:
+- Agent collaboration patterns
+- Task delegation efficiency
+- Communication protocols
+- Workflow optimization opportunities
+- Resource utilization
+
+Adapts by:
+- Optimizing agent assignments
+- Improving task decomposition
+- Enhancing communication efficiency
+- Identifying bottlenecks
+- Suggesting architectural improvements
+
+---
+**Status:** Production Ready | Self-Improving | Multi-Framework Support
