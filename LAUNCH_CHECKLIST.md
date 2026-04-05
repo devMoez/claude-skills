@@ -68,8 +68,8 @@ Go to: https://github.com/new
 
 #### Option B: Manual Commands
 ```bash
-# Replace YOUR_USERNAME with your GitHub username
-git remote add origin https://github.com/YOUR_USERNAME/claude-skills.git
+# Replace devMoez with your GitHub username if different
+git remote add origin https://github.com/devMoez/claude-skills.git
 git branch -M main
 git push -u origin main
 ```
@@ -161,10 +161,10 @@ Your README already includes:
 
 Once pushed, your links will be:
 
-- **Repository:** `https://github.com/YOUR_USERNAME/claude-skills`
-- **Raw Skills:** `https://raw.githubusercontent.com/YOUR_USERNAME/claude-skills/main/SKILL_NAME.skill`
-- **Discussions:** `https://github.com/YOUR_USERNAME/claude-skills/discussions`
-- **Issues:** `https://github.com/YOUR_USERNAME/claude-skills/issues`
+- **Repository:** `https://github.com/devMoez/claude-skills`
+- **Raw Skills:** `https://raw.githubusercontent.com/devMoez/claude-skills/main/SKILL_NAME.skill`
+- **Discussions:** `https://github.com/devMoez/claude-skills/discussions`
+- **Issues:** `https://github.com/devMoez/claude-skills/issues`
 
 ## 🌟 Example Social Posts
 

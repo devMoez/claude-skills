@@ -13,7 +13,7 @@ Get up and running with Claude Skills in 5 minutes! 🚀
 
 ### Option A: Clone the Repository
 ```bash
-git clone https://github.com/yourusername/claude-skills.git
+git clone https://github.com/devMoez/claude-skills.git
 cd claude-skills
 ```
 

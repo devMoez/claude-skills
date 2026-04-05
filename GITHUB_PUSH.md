@@ -20,19 +20,19 @@ After creating the repository, run these commands:
 
 ### Option 1: HTTPS (Recommended for first time)
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/claude-skills.git
+git remote add origin https://github.com/devMoez/claude-skills.git
 git branch -M main
 git push -u origin main
 ```
 
 ### Option 2: SSH (If you have SSH keys set up)
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/claude-skills.git
+git remote add origin git@github.com:devMoez/claude-skills.git
 git branch -M main
 git push -u origin main
 ```
 
-Replace `YOUR_USERNAME` with your actual GitHub username!
+Replace `devMoez` with your actual GitHub username if different!
 
 ## 🏷️ Add Topics/Tags
 
@@ -114,7 +114,7 @@ Enable GitHub Insights to see:
 Your skills are now on GitHub and ready to share with the world!
 
 Visit your repository at:
-`https://github.com/YOUR_USERNAME/claude-skills`
+`https://github.com/devMoez/claude-skills`
 
 ---
 

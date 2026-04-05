@@ -3,7 +3,7 @@
 > A comprehensive collection of production-ready, self-improving AI skills for full-stack development, security auditing, and system architecture.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/claude-skills)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/devMoez/claude-skills)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 ---
@@ -61,7 +61,7 @@ Each skill is:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/claude-skills.git
+   git clone https://github.com/devMoez/claude-skills.git
    cd claude-skills
    ```
 
@@ -202,7 +202,7 @@ We love contributions! Here's how you can help:
 
 ### Reporting Issues
 
-Found a bug or security issue? Please [open an issue](https://github.com/yourusername/claude-skills/issues) with:
+Found a bug or security issue? Please [open an issue](https://github.com/devMoez/claude-skills/issues) with:
 - Skill name
 - Issue description
 - Expected vs actual behavior
@@ -247,10 +247,10 @@ If you find these skills helpful, please consider giving us a star! ⭐
 
 ## 📬 Contact
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/claude-skills/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/claude-skills/discussions)
-- **Email:** your.email@example.com
-- **Twitter:** [@yourusername](https://twitter.com/yourusername)
+- **Issues:** [GitHub Issues](https://github.com/devMoez/claude-skills/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/devMoez/claude-skills/discussions)
+- **Email:** moezfsdx942@gmail.com
+- **Twitter:** [@devMoez](https://twitter.com/devMoez)
 
 ---
 

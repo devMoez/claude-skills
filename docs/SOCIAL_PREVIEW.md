@@ -25,7 +25,7 @@ Create an image with:
 Frontend • Backend • Database • Microservices
 Security • DevOps • Real-time • Testing
 
-github.com/YOUR_USERNAME/claude-skills
+github.com/devMoez/claude-skills
 ```
 
 ## Design Tools (Free)
@@ -58,7 +58,7 @@ Text: `#F9FAFB` (Light gray)
 │  TypeScript • React • Node.js • Docker          │
 │  PostgreSQL • Kubernetes • GraphQL              │
 │                                                  │
-│  github.com/yourusername/claude-skills          │
+│  github.com/devMoez/claude-skills          │
 └─────────────────────────────────────────────────┘
 ```
 

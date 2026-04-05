@@ -1,8 +1,8 @@
 # 🤖 AI Agent Orchestrator Skill
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/claude-skills)
-[![Type](https://img.shields.io/badge/type-Self--Improving-brightgreen.svg)](https://github.com/yourusername/claude-skills)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/devMoez/claude-skills)
+[![Type](https://img.shields.io/badge/type-Self--Improving-brightgreen.svg)](https://github.com/devMoez/claude-skills)
 
 > Design, deploy, and orchestrate intelligent AI agent systems with autonomous task execution, inter-agent communication, and adaptive workflow optimization.
 
@@ -29,7 +29,7 @@ The **AI Agent Orchestrator Skill** enables you to build sophisticated multi-age
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-skills.git
+git clone https://github.com/devMoez/claude-skills.git
 cd claude-skills
 
 # Install dependencies for Python examples
