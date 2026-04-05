@@ -39,6 +39,9 @@ Each skill is:
 - **[API Gateway & Service Mesh](./api-gateway-service-mesh.skill)** - Kong, Istio, traffic management, rate limiting, circuit breakers
 - **[DevOps & Infrastructure](./devops-infrastructure.skill)** - CI/CD, Docker, Kubernetes, monitoring, and deployment automation
 
+### 🤖 AI & Intelligent Systems
+- **[AI Agent Orchestrator](./ai-agent-orchestrator.skill)** - Multi-agent systems with LangGraph, AutoGen, CrewAI, autonomous workflows ([📖 Docs](./docs/ai-agent-orchestrator-README.md))
+
 ### 🔒 Security
 - **[Security Audit Master](./security-audit-master.skill)** - Comprehensive security scanning, vulnerability detection, OWASP Top 10 coverage
 - **[Ultimate Memory Orchestrator](./ultimate-memory-orchestrator.skill)** - Secure memory management and data handling
