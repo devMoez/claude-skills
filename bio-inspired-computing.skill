@@ -1,0 +1,688 @@
+# Bio-Inspired Computing Master Skill
+**Version:** 1.0.0  
+**Type:** Nature-Inspired Algorithms | Swarm Intelligence | Neuromorphic Computing
+
+## Core Purpose
+Implement bio-inspired computational paradigms including swarm intelligence, artificial immune systems, neural morphology, evolutionary strategies, and nature-inspired optimization for solving complex computational problems.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track algorithm convergence patterns
+  - Learn optimal parameter configurations
+  - Adapt to problem landscapes dynamically
+  - Remember successful bio-inspired strategies
+  - Evolve based on solution quality metrics
+```
+
+## Core Frameworks
+
+### Bio-Inspired Computing
+- **PySwarms** (Particle Swarm Optimization)
+- **NEAT-Python** (NeuroEvolution)
+- **Lava** (Intel Neuromorphic)
+- **Brian2** (Spiking Neural Networks)
+- **Mesa** (Agent-Based Modeling)
+
+### Optimization Libraries
+- **Inspyred** (Bio-inspired optimization)
+- **DEAP** (Evolutionary algorithms)
+- **PyGMO** (Global optimization)
+
+## Swarm Intelligence
+
+### **Particle Swarm Optimization**
+```python
+import numpy as np
+from typing import Callable, Tuple, List
+from dataclasses import dataclass
+
+@dataclass
+class Particle:
+    """Individual particle in swarm"""
+    position: np.ndarray
+    velocity: np.ndarray
+    best_position: np.ndarray
+    best_fitness: float
+    fitness: float = float('inf')
+
+
+class ParticleSwarmOptimizer:
+    """
+    Particle Swarm Optimization (PSO)
+    Inspired by bird flocking and fish schooling behavior
+    """
+    
+    def __init__(
+        self,
+        n_particles: int = 50,
+        dimensions: int = 2,
+        bounds: Tuple[np.ndarray, np.ndarray] = None,
+        w: float = 0.7,  # Inertia weight
+        c1: float = 1.5,  # Cognitive parameter
+        c2: float = 1.5   # Social parameter
+    ):
+        self.n_particles = n_particles
+        self.dimensions = dimensions
+        self.bounds = bounds or (np.zeros(dimensions), np.ones(dimensions))
+        
+        # PSO parameters
+        self.w = w  # Inertia weight
+        self.c1 = c1  # Cognitive (personal best) weight
+        self.c2 = c2  # Social (global best) weight
+        
+        self.particles: List[Particle] = []
+        self.global_best_position = None
+        self.global_best_fitness = float('inf')
+        self.fitness_history = []
+    
+    def initialize_swarm(self):
+        """Initialize particle swarm"""
+        lower, upper = self.bounds
+        
+        for _ in range(self.n_particles):
+            # Random position within bounds
+            position = lower + np.random.rand(self.dimensions) * (upper - lower)
+            
+            # Random velocity
+            velocity = np.random.randn(self.dimensions) * 0.1
+            
+            particle = Particle(
+                position=position.copy(),
+                velocity=velocity,
+                best_position=position.copy(),
+                best_fitness=float('inf')
+            )
+            
+            self.particles.append(particle)
+    
+    def optimize(
+        self,
+        objective_function: Callable[[np.ndarray], float],
+        max_iterations: int = 100,
+        min_fitness: float = 1e-6
+    ) -> Tuple[np.ndarray, float]:
+        """Run PSO optimization"""
+        
+        self.initialize_swarm()
+        
+        for iteration in range(max_iterations):
+            # Evaluate all particles
+            for particle in self.particles:
+                particle.fitness = objective_function(particle.position)
+                
+                # Update personal best
+                if particle.fitness < particle.best_fitness:
+                    particle.best_fitness = particle.fitness
+                    particle.best_position = particle.position.copy()
+                
+                # Update global best
+                if particle.fitness < self.global_best_fitness:
+                    self.global_best_fitness = particle.fitness
+                    self.global_best_position = particle.position.copy()
+            
+            # Update velocities and positions
+            self._update_swarm()
+            
+            self.fitness_history.append(self.global_best_fitness)
+            
+            print(f"Iteration {iteration}: Best Fitness = {self.global_best_fitness:.6f}")
+            
+            # Early stopping
+            if self.global_best_fitness < min_fitness:
+                print(f"Converged at iteration {iteration}")
+                break
+        
+        return self.global_best_position, self.global_best_fitness
+    
+    def _update_swarm(self):
+        """Update particle velocities and positions"""
+        for particle in self.particles:
+            # Random factors
+            r1 = np.random.rand(self.dimensions)
+            r2 = np.random.rand(self.dimensions)
+            
+            # Velocity update
+            cognitive = self.c1 * r1 * (particle.best_position - particle.position)
+            social = self.c2 * r2 * (self.global_best_position - particle.position)
+            
+            particle.velocity = (
+                self.w * particle.velocity +
+                cognitive +
+                social
+            )
+            
+            # Position update
+            particle.position += particle.velocity
+            
+            # Apply bounds
+            lower, upper = self.bounds
+            particle.position = np.clip(particle.position, lower, upper)
+
+
+class AntColonyOptimizer:
+    """
+    Ant Colony Optimization for combinatorial problems
+    Inspired by foraging behavior of ants
+    """
+    
+    def __init__(
+        self,
+        n_ants: int = 50,
+        n_iterations: int = 100,
+        alpha: float = 1.0,  # Pheromone importance
+        beta: float = 2.0,   # Heuristic importance
+        rho: float = 0.5,    # Evaporation rate
+        Q: float = 100.0     # Pheromone deposit factor
+    ):
+        self.n_ants = n_ants
+        self.n_iterations = n_iterations
+        self.alpha = alpha
+        self.beta = beta
+        self.rho = rho
+        self.Q = Q
+        
+        self.pheromones = None
+        self.best_path = None
+        self.best_cost = float('inf')
+    
+    def solve_tsp(self, distances: np.ndarray) -> Tuple[List[int], float]:
+        """
+        Solve Traveling Salesman Problem
+        
+        Args:
+            distances: Distance matrix between cities
+        """
+        n_cities = distances.shape[0]
+        
+        # Initialize pheromones
+        self.pheromones = np.ones((n_cities, n_cities))
+        
+        for iteration in range(self.n_iterations):
+            all_paths = []
+            all_costs = []
+            
+            # Each ant constructs a solution
+            for ant in range(self.n_ants):
+                path = self._construct_path(distances)
+                cost = self._calculate_path_cost(path, distances)
+                
+                all_paths.append(path)
+                all_costs.append(cost)
+                
+                # Update best solution
+                if cost < self.best_cost:
+                    self.best_cost = cost
+                    self.best_path = path
+            
+            # Update pheromones
+            self._update_pheromones(all_paths, all_costs, n_cities)
+            
+            print(f"Iteration {iteration}: Best Cost = {self.best_cost:.2f}")
+        
+        return self.best_path, self.best_cost
+    
+    def _construct_path(self, distances: np.ndarray) -> List[int]:
+        """Construct path for one ant"""
+        n_cities = distances.shape[0]
+        
+        # Start at random city
+        current_city = np.random.randint(n_cities)
+        path = [current_city]
+        unvisited = set(range(n_cities)) - {current_city}
+        
+        while unvisited:
+            # Calculate probabilities for next city
+            probabilities = self._calculate_probabilities(
+                current_city,
+                unvisited,
+                distances
+            )
+            
+            # Select next city
+            next_city = np.random.choice(list(unvisited), p=probabilities)
+            path.append(next_city)
+            unvisited.remove(next_city)
+            current_city = next_city
+        
+        return path
+    
+    def _calculate_probabilities(
+        self,
+        current_city: int,
+        unvisited: set,
+        distances: np.ndarray
+    ) -> np.ndarray:
+        """Calculate transition probabilities"""
+        pheromone = np.array([
+            self.pheromones[current_city, city]
+            for city in unvisited
+        ])
+        
+        heuristic = np.array([
+            1.0 / distances[current_city, city]
+            for city in unvisited
+        ])
+        
+        # Probability formula
+        numerator = (pheromone ** self.alpha) * (heuristic ** self.beta)
+        denominator = numerator.sum()
+        
+        probabilities = numerator / denominator
+        return probabilities
+    
+    def _calculate_path_cost(self, path: List[int], distances: np.ndarray) -> float:
+        """Calculate total path cost"""
+        cost = 0
+        for i in range(len(path) - 1):
+            cost += distances[path[i], path[i + 1]]
+        
+        # Return to start
+        cost += distances[path[-1], path[0]]
+        
+        return cost
+    
+    def _update_pheromones(
+        self,
+        all_paths: List[List[int]],
+        all_costs: List[float],
+        n_cities: int
+    ):
+        """Update pheromone trails"""
+        # Evaporation
+        self.pheromones *= (1 - self.rho)
+        
+        # Deposit new pheromones
+        for path, cost in zip(all_paths, all_costs):
+            deposit = self.Q / cost
+            
+            for i in range(len(path) - 1):
+                city1, city2 = path[i], path[i + 1]
+                self.pheromones[city1, city2] += deposit
+                self.pheromones[city2, city1] += deposit
+            
+            # Return edge
+            self.pheromones[path[-1], path[0]] += deposit
+            self.pheromones[path[0], path[-1]] += deposit
+```
+
+### **Artificial Bee Colony**
+```python
+class ArtificialBeeColony:
+    """
+    Artificial Bee Colony (ABC) optimization
+    Inspired by honey bee foraging behavior
+    """
+    
+    def __init__(
+        self,
+        n_employed: int = 50,
+        n_onlookers: int = 50,
+        n_scouts: int = 5,
+        limit: int = 100
+    ):
+        self.n_employed = n_employed
+        self.n_onlookers = n_onlookers
+        self.n_scouts = n_scouts
+        self.limit = limit
+        
+        self.food_sources = []
+        self.best_source = None
+        self.best_fitness = float('inf')
+    
+    def optimize(
+        self,
+        objective_function: Callable,
+        dimensions: int,
+        bounds: Tuple[np.ndarray, np.ndarray],
+        max_iterations: int = 100
+    ):
+        """Run ABC optimization"""
+        lower, upper = bounds
+        
+        # Initialize food sources
+        self._initialize_sources(dimensions, lower, upper)
+        
+        for iteration in range(max_iterations):
+            # Employed bee phase
+            self._employed_bee_phase(objective_function, lower, upper)
+            
+            # Onlooker bee phase
+            self._onlooker_bee_phase(objective_function, lower, upper)
+            
+            # Scout bee phase
+            self._scout_bee_phase(objective_function, lower, upper)
+            
+            # Find best
+            for source in self.food_sources:
+                if source['fitness'] < self.best_fitness:
+                    self.best_fitness = source['fitness']
+                    self.best_source = source['position'].copy()
+            
+            print(f"Iteration {iteration}: Best = {self.best_fitness:.6f}")
+        
+        return self.best_source, self.best_fitness
+    
+    def _initialize_sources(self, dimensions, lower, upper):
+        """Initialize food sources randomly"""
+        for _ in range(self.n_employed):
+            position = lower + np.random.rand(dimensions) * (upper - lower)
+            
+            self.food_sources.append({
+                'position': position,
+                'fitness': float('inf'),
+                'trials': 0
+            })
+    
+    def _employed_bee_phase(self, objective_func, lower, upper):
+        """Employed bees explore around food sources"""
+        for source in self.food_sources:
+            # Produce new candidate
+            candidate = self._produce_candidate(source, lower, upper)
+            candidate_fitness = objective_func(candidate)
+            
+            # Greedy selection
+            if candidate_fitness < source['fitness']:
+                source['position'] = candidate
+                source['fitness'] = candidate_fitness
+                source['trials'] = 0
+            else:
+                source['trials'] += 1
+    
+    def _onlooker_bee_phase(self, objective_func, lower, upper):
+        """Onlooker bees select sources probabilistically"""
+        # Calculate selection probabilities
+        fitnesses = np.array([s['fitness'] for s in self.food_sources])
+        
+        # Convert to probabilities (better fitness = higher prob)
+        max_fitness = np.max(fitnesses)
+        probabilities = (max_fitness - fitnesses) / max_fitness
+        probabilities /= probabilities.sum()
+        
+        for _ in range(self.n_onlookers):
+            # Select source
+            source_idx = np.random.choice(len(self.food_sources), p=probabilities)
+            source = self.food_sources[source_idx]
+            
+            # Produce candidate
+            candidate = self._produce_candidate(source, lower, upper)
+            candidate_fitness = objective_func(candidate)
+            
+            # Greedy selection
+            if candidate_fitness < source['fitness']:
+                source['position'] = candidate
+                source['fitness'] = candidate_fitness
+                source['trials'] = 0
+    
+    def _scout_bee_phase(self, objective_func, lower, upper):
+        """Scout bees abandon poor sources"""
+        for source in self.food_sources:
+            if source['trials'] > self.limit:
+                # Abandon and find new random source
+                dimensions = len(source['position'])
+                source['position'] = lower + np.random.rand(dimensions) * (upper - lower)
+                source['fitness'] = objective_func(source['position'])
+                source['trials'] = 0
+    
+    def _produce_candidate(self, source, lower, upper):
+        """Produce candidate solution near source"""
+        position = source['position'].copy()
+        dimensions = len(position)
+        
+        # Select random dimension
+        dim = np.random.randint(dimensions)
+        
+        # Select random neighbor source
+        neighbor = self.food_sources[np.random.randint(len(self.food_sources))]
+        
+        # Modify position
+        phi = np.random.uniform(-1, 1)
+        position[dim] += phi * (position[dim] - neighbor['position'][dim])
+        
+        # Apply bounds
+        position = np.clip(position, lower, upper)
+        
+        return position
+```
+
+## Spiking Neural Networks
+
+### **Neuromorphic Computing**
+```python
+import brian2 as b2
+
+class SpikingNeuralNetwork:
+    """
+    Spiking Neural Network using Brian2
+    Mimics biological neurons
+    """
+    
+    def __init__(self, n_input: int, n_hidden: int, n_output: int):
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        
+        # Neuron parameters
+        self.tau = 10 * b2.ms
+        self.v_rest = -70 * b2.mV
+        self.v_threshold = -50 * b2.mV
+        self.v_reset = -65 * b2.mV
+        
+        self.create_network()
+    
+    def create_network(self):
+        """Create spiking neural network"""
+        # Leaky Integrate-and-Fire neuron model
+        eqs = '''
+        dv/dt = (v_rest - v) / tau : volt
+        '''
+        
+        # Input layer
+        self.input_layer = b2.PoissonGroup(self.n_input, rates=0*b2.Hz)
+        
+        # Hidden layer
+        self.hidden_layer = b2.NeuronGroup(
+            self.n_hidden,
+            eqs,
+            threshold='v > v_threshold',
+            reset='v = v_reset',
+            method='exact'
+        )
+        
+        # Output layer
+        self.output_layer = b2.NeuronGroup(
+            self.n_output,
+            eqs,
+            threshold='v > v_threshold',
+            reset='v = v_reset',
+            method='exact'
+        )
+        
+        # Synapses
+        self.syn_input_hidden = b2.Synapses(
+            self.input_layer,
+            self.hidden_layer,
+            'w : 1',
+            on_pre='v += w*mV'
+        )
+        self.syn_input_hidden.connect()
+        self.syn_input_hidden.w = 'rand() * 5'
+        
+        self.syn_hidden_output = b2.Synapses(
+            self.hidden_layer,
+            self.output_layer,
+            'w : 1',
+            on_pre='v += w*mV'
+        )
+        self.syn_hidden_output.connect()
+        self.syn_hidden_output.w = 'rand() * 5'
+        
+        # Monitors
+        self.spike_monitor = b2.SpikeMonitor(self.output_layer)
+        self.state_monitor = b2.StateMonitor(self.hidden_layer, 'v', record=True)
+    
+    def run(self, input_rates: np.ndarray, duration: float = 100):
+        """Run simulation"""
+        self.input_layer.rates = input_rates * b2.Hz
+        
+        b2.run(duration * b2.ms)
+        
+        return self.spike_monitor.spike_trains()
+    
+    def train_stdp(self):
+        """Train using Spike-Timing-Dependent Plasticity"""
+        # STDP learning rule
+        stdp_eqs = '''
+        w : 1
+        dapre/dt = -apre / tau_pre : 1 (event-driven)
+        dapost/dt = -apost / tau_post : 1 (event-driven)
+        '''
+        
+        stdp_pre = '''
+        apre += dA_pre
+        w = clip(w + apost, 0, w_max)
+        '''
+        
+        stdp_post = '''
+        apost += dA_post
+        w = clip(w + apre, 0, w_max)
+        '''
+        
+        # Apply STDP to synapses
+        # (Implementation details omitted for brevity)
+```
+
+### **Neuromorphic Hardware Interface**
+```python
+class NeuromorphicProcessor:
+    """Interface to neuromorphic hardware (Intel Loihi, IBM TrueNorth)"""
+    
+    def __init__(self, backend: str = 'loihi'):
+        self.backend = backend
+        
+        if backend == 'loihi':
+            self._init_loihi()
+        elif backend == 'truenorth':
+            self._init_truenorth()
+    
+    def _init_loihi(self):
+        """Initialize Intel Loihi"""
+        try:
+            import nxsdk
+            self.processor = nxsdk.Board()
+        except ImportError:
+            print("Loihi SDK not available, using simulation")
+    
+    def compile_network(self, snn: SpikingNeuralNetwork):
+        """Compile SNN to neuromorphic hardware"""
+        # Map neurons to cores
+        # Configure synaptic connections
+        # Set learning rules
+        pass
+    
+    def run_inference(self, input_spikes: np.ndarray) -> np.ndarray:
+        """Run inference on neuromorphic chip"""
+        # Ultra-low power, real-time inference
+        pass
+```
+
+## Artificial Immune Systems
+
+### **Clonal Selection Algorithm**
+```python
+class ClonalSelectionAlgorithm:
+    """
+    Artificial Immune System for optimization
+    Based on clonal selection principle
+    """
+    
+    def __init__(self, population_size: int = 100, clone_factor: int = 10):
+        self.population_size = population_size
+        self.clone_factor = clone_factor
+        self.antibodies = []
+    
+    def optimize(
+        self,
+        objective_func: Callable,
+        dimensions: int,
+        bounds: Tuple,
+        max_iterations: int = 100
+    ):
+        """Run clonal selection optimization"""
+        lower, upper = bounds
+        
+        # Initialize antibody population
+        self._initialize_population(dimensions, lower, upper)
+        
+        for iteration in range(max_iterations):
+            # Evaluate affinities
+            affinities = [objective_func(ab) for ab in self.antibodies]
+            
+            # Select best
+            best_indices = np.argsort(affinities)[:self.population_size // 2]
+            
+            # Clone proportional to affinity
+            clones = []
+            for idx in best_indices:
+                n_clones = int(self.clone_factor * (1 - affinities[idx] / max(affinities)))
+                
+                for _ in range(n_clones):
+                    clone = self._hypermutate(self.antibodies[idx], affinities[idx])
+                    clones.append(clone)
+            
+            # Select best clones
+            clone_affinities = [objective_func(c) for c in clones]
+            best_clones = [clones[i] for i in np.argsort(clone_affinities)[:self.population_size // 2]]
+            
+            # Replace worst antibodies
+            self.antibodies = (
+                [self.antibodies[i] for i in best_indices] +
+                best_clones
+            )
+            
+            # Add random antibodies (diversity)
+            n_random = self.population_size - len(self.antibodies)
+            for _ in range(n_random):
+                random_ab = lower + np.random.rand(dimensions) * (upper - lower)
+                self.antibodies.append(random_ab)
+            
+            best_affinity = min(affinities)
+            print(f"Iteration {iteration}: Best = {best_affinity:.6f}")
+        
+        affinities = [objective_func(ab) for ab in self.antibodies]
+        best_idx = np.argmin(affinities)
+        
+        return self.antibodies[best_idx], affinities[best_idx]
+    
+    def _initialize_population(self, dimensions, lower, upper):
+        """Initialize antibody population"""
+        for _ in range(self.population_size):
+            antibody = lower + np.random.rand(dimensions) * (upper - lower)
+            self.antibodies.append(antibody)
+    
+    def _hypermutate(self, antibody: np.ndarray, affinity: float) -> np.ndarray:
+        """Hypermutation inversely proportional to affinity"""
+        mutation_rate = np.exp(-affinity)
+        mutated = antibody + np.random.randn(len(antibody)) * mutation_rate
+        
+        return mutated
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Algorithm convergence speeds
+- Parameter sensitivity patterns
+- Problem-specific performance
+- Swarm behavior emergent properties
+- Neuromorphic efficiency metrics
+
+And adapts by:
+- Auto-tuning algorithm parameters
+- Selecting optimal bio-inspired approach
+- Hybridizing multiple strategies
+- Learning problem-specific heuristics
+- Optimizing for energy efficiency
+
+---
+**Status:** Research-Ready | Nature-Inspired | Distributed Intelligence | Self-Optimizing
