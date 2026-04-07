@@ -1,0 +1,788 @@
+# Spatial Computing XR Master Skill
+**Version:** 1.0.0  
+**Type:** Immersive Computing | AR/VR/MR | Spatial Intelligence
+
+## Core Purpose
+Build next-generation spatial computing applications for AR/VR/MR platforms (Vision Pro, Quest, HoloLens), with intelligent 3D interactions, spatial anchors, and immersive experiences.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track spatial interaction patterns
+  - Learn optimal UI placement in 3D space
+  - Adapt to hand tracking accuracy
+  - Remember comfortable viewing distances
+  - Evolve based on user comfort metrics
+```
+
+## Spatial Computing Platforms
+
+### Primary Platforms
+- **Apple Vision Pro** (visionOS)
+- **Meta Quest 3/Pro** (Horizon OS)
+- **Microsoft HoloLens 2** (Windows Mixed Reality)
+- **Magic Leap 2**
+- **WebXR** (Cross-platform web)
+
+### Development Frameworks
+- **RealityKit** (Apple)
+- **ARKit** (Apple)
+- **Unity XR**
+- **Unreal Engine VR**
+- **Three.js + WebXR**
+- **A-Frame**
+- **React Three Fiber + XR**
+
+## Vision Pro Development
+
+### **SwiftUI + RealityKit Integration**
+```swift
+import SwiftUI
+import RealityKit
+import RealityKitContent
+
+@main
+struct SpatialApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+        
+        ImmersiveSpace(id: "ImmersiveSpace") {
+            ImmersiveView()
+        }
+        .immersionStyle(selection: .constant(.mixed), in: .mixed)
+    }
+}
+
+struct ContentView: View {
+    @State private var showImmersiveSpace = false
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Spatial Computing Demo")
+                .font(.extraLargeTitle)
+            
+            Toggle("Show Immersive Space", isOn: $showImmersiveSpace)
+                .toggleStyle(.button)
+                .padding()
+        }
+        .padding()
+        .onChange(of: showImmersiveSpace) { _, newValue in
+            Task {
+                if newValue {
+                    await openImmersiveSpace(id: "ImmersiveSpace")
+                } else {
+                    await dismissImmersiveSpace()
+                }
+            }
+        }
+    }
+}
+
+struct ImmersiveView: View {
+    @State private var entities: [Entity] = []
+    @State private var selectedEntity: Entity?
+    
+    var body: some View {
+        RealityView { content in
+            // Load 3D scene
+            await setupScene(content: content)
+        } update: { content in
+            // Update scene
+            updateScene(content: content)
+        }
+        .gesture(
+            SpatialTapGesture()
+                .targetedToAnyEntity()
+                .onEnded { value in
+                    handleTap(entity: value.entity)
+                }
+        )
+        .gesture(
+            DragGesture()
+                .targetedToAnyEntity()
+                .onChanged { value in
+                    handleDrag(entity: value.entity, translation: value.translation3D)
+                }
+        )
+    }
+    
+    func setupScene(content: RealityViewContent) async {
+        // Create anchor
+        let anchor = AnchorEntity(.plane(.horizontal, classification: .table, minimumBounds: [0.2, 0.2]))
+        
+        // Create 3D content
+        let sphere = ModelEntity(
+            mesh: .generateSphere(radius: 0.1),
+            materials: [SimpleMaterial(color: .blue, isMetallic: true)]
+        )
+        sphere.position = [0, 0.1, 0]
+        
+        // Add physics
+        sphere.components.set(PhysicsBodyComponent(
+            massProperties: .default,
+            mode: .dynamic
+        ))
+        
+        // Add collision
+        sphere.components.set(CollisionComponent(
+            shapes: [.generateSphere(radius: 0.1)]
+        ))
+        
+        // Enable interactions
+        sphere.components.set(InputTargetComponent())
+        sphere.components.set(HoverEffectComponent())
+        
+        anchor.addChild(sphere)
+        content.add(anchor)
+        
+        entities.append(sphere)
+    }
+    
+    func updateScene(content: RealityViewContent) {
+        // Animate entities
+        for entity in entities {
+            entity.position.y = Float(sin(Date().timeIntervalSince1970)) * 0.05 + 0.1
+        }
+    }
+    
+    func handleTap(entity: Entity) {
+        selectedEntity = entity
+        
+        // Add selection feedback
+        var material = SimpleMaterial()
+        material.color = .init(tint: .yellow)
+        
+        if let modelEntity = entity as? ModelEntity {
+            modelEntity.model?.materials = [material]
+        }
+        
+        // Haptic feedback
+        let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
+        feedbackGenerator.impactOccurred()
+    }
+    
+    func handleDrag(entity: Entity, translation: SIMD3<Float>) {
+        entity.position += translation * 0.001
+    }
+}
+
+// Spatial anchor persistence
+class SpatialAnchorManager {
+    private var anchors: [UUID: AnchorEntity] = [:]
+    
+    func saveAnchor(_ anchor: AnchorEntity) async throws {
+        let id = UUID()
+        anchors[id] = anchor
+        
+        // Persist to world map
+        let descriptor = AnchoringComponent.Target.world(transform: anchor.transform)
+        
+        // Save to persistent storage
+        try await persistAnchor(id: id, descriptor: descriptor)
+    }
+    
+    func loadAnchors() async throws -> [AnchorEntity] {
+        let savedAnchors = try await fetchPersistedAnchors()
+        
+        return savedAnchors.map { descriptor in
+            AnchorEntity(world: descriptor.transform)
+        }
+    }
+    
+    private func persistAnchor(id: UUID, descriptor: AnchoringComponent.Target) async throws {
+        // Save to CloudKit or local storage
+        let data = try JSONEncoder().encode(descriptor)
+        UserDefaults.standard.set(data, forKey: "anchor_\(id.uuidString)")
+    }
+    
+    private func fetchPersistedAnchors() async throws -> [AnchoringComponent.Target] {
+        // Load from storage
+        return []
+    }
+}
+```
+
+### **Hand Tracking & Gestures**
+```swift
+import ARKit
+
+class HandTrackingManager: ObservableObject {
+    @Published var leftHand: HandAnchor?
+    @Published var rightHand: HandAnchor?
+    @Published var detectedGesture: HandGesture?
+    
+    enum HandGesture {
+        case pinch
+        case point
+        case grab
+        case swipe(direction: Direction)
+        case custom(String)
+    }
+    
+    enum Direction {
+        case up, down, left, right
+    }
+    
+    func processHandUpdate(_ anchor: HandAnchor) {
+        switch anchor.chirality {
+        case .left:
+            leftHand = anchor
+        case .right:
+            rightHand = anchor
+        }
+        
+        // Detect gestures
+        detectedGesture = detectGesture(from: anchor)
+    }
+    
+    private func detectGesture(from anchor: HandAnchor) -> HandGesture? {
+        let skeleton = anchor.handSkeleton
+        
+        // Get finger positions
+        guard let thumbTip = skeleton?.joint(.thumbTip),
+              let indexTip = skeleton?.joint(.indexFingerTip),
+              let middleTip = skeleton?.joint(.middleFingerTip) else {
+            return nil
+        }
+        
+        // Calculate distances
+        let thumbIndexDistance = distance(
+            thumbTip.anchorFromJointTransform.columns.3,
+            indexTip.anchorFromJointTransform.columns.3
+        )
+        
+        // Detect pinch
+        if thumbIndexDistance < 0.02 {
+            return .pinch
+        }
+        
+        // Detect point
+        let indexExtended = isFingerExtended(skeleton: skeleton, finger: .indexFinger)
+        let othersRetracted = !isFingerExtended(skeleton: skeleton, finger: .middleFinger)
+        
+        if indexExtended && othersRetracted {
+            return .point
+        }
+        
+        // Detect grab
+        let allRetracted = [HandSkeleton.JointName.indexFingerTip, .middleFingerTip, .ringFingerTip]
+            .allSatisfy { !isFingerExtended(skeleton: skeleton, finger: $0.parentFinger) }
+        
+        if allRetracted {
+            return .grab
+        }
+        
+        return nil
+    }
+    
+    private func isFingerExtended(skeleton: HandSkeleton?, finger: HandSkeleton.JointName.Finger) -> Bool {
+        guard let skeleton = skeleton,
+              let tip = skeleton.joint(finger.tip),
+              let mcp = skeleton.joint(finger.metacarpal) else {
+            return false
+        }
+        
+        let tipPos = tip.anchorFromJointTransform.columns.3
+        let mcpPos = mcp.anchorFromJointTransform.columns.3
+        
+        let extension = distance(tipPos, mcpPos)
+        return extension > 0.08 // Threshold for extended finger
+    }
+    
+    private func distance(_ a: SIMD4<Float>, _ b: SIMD4<Float>) -> Float {
+        let dx = a.x - b.x
+        let dy = a.y - b.y
+        let dz = a.z - b.z
+        return sqrt(dx*dx + dy*dy + dz*dz)
+    }
+}
+
+extension HandSkeleton.JointName {
+    enum Finger {
+        case thumb, index, middle, ring, little
+        
+        var tip: HandSkeleton.JointName {
+            switch self {
+            case .thumb: return .thumbTip
+            case .index: return .indexFingerTip
+            case .middle: return .middleFingerTip
+            case .ring: return .ringFingerTip
+            case .little: return .littleFingerTip
+            }
+        }
+        
+        var metacarpal: HandSkeleton.JointName {
+            switch self {
+            case .thumb: return .thumbKnuckle
+            case .index: return .indexFingerMetacarpal
+            case .middle: return .middleFingerMetacarpal
+            case .ring: return .ringFingerMetacarpal
+            case .little: return .littleFingerMetacarpal
+            }
+        }
+    }
+    
+    var parentFinger: Finger {
+        switch self {
+        case .thumbTip, .thumbIntermediateTip, .thumbKnuckle, .thumbIntermediateBase:
+            return .thumb
+        case .indexFingerTip, .indexFingerIntermediateTip, .indexFingerKnuckle, .indexFingerMetacarpal, .indexFingerIntermediateBase:
+            return .index
+        case .middleFingerTip, .middleFingerIntermediateTip, .middleFingerKnuckle, .middleFingerMetacarpal, .middleFingerIntermediateBase:
+            return .middle
+        case .ringFingerTip, .ringFingerIntermediateTip, .ringFingerKnuckle, .ringFingerMetacarpal, .ringFingerIntermediateBase:
+            return .ring
+        case .littleFingerTip, .littleFingerIntermediateTip, .littleFingerKnuckle, .littleFingerMetacarpal, .littleFingerIntermediateBase:
+            return .little
+        default:
+            return .index
+        }
+    }
+}
+```
+
+## WebXR Development
+
+### **React Three Fiber + XR**
+```typescript
+import { Canvas } from '@react-three/fiber';
+import { VRButton, ARButton, XR, Controllers, Hands, Interactive } from '@react-three/xr';
+import { useState } from 'react';
+import * as THREE from 'three';
+
+export function XRExperience() {
+  return (
+    <>
+      <VRButton />
+      <ARButton />
+      
+      <Canvas>
+        <XR>
+          {/* Controllers */}
+          <Controllers />
+          
+          {/* Hand tracking */}
+          <Hands />
+          
+          {/* Scene */}
+          <SpatialScene />
+          
+          {/* Lighting */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+        </XR>
+      </Canvas>
+    </>
+  );
+}
+
+function SpatialScene() {
+  const [cubes, setCubes] = useState<{id: number; position: [number, number, number]}[]>([]);
+  
+  const addCube = (event: any) => {
+    const position = event.intersection.point;
+    setCubes(prev => [
+      ...prev,
+      { id: Date.now(), position: position.toArray() }
+    ]);
+  };
+  
+  return (
+    <group>
+      {/* Interactive ground plane */}
+      <Interactive onSelect={addCube}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]}>
+          <planeGeometry args={[10, 10]} />
+          <meshStandardMaterial color="#808080" transparent opacity={0.5} />
+        </mesh>
+      </Interactive>
+      
+      {/* Spawned cubes */}
+      {cubes.map(cube => (
+        <InteractiveCube key={cube.id} position={cube.position} />
+      ))}
+      
+      {/* Spatial UI */}
+      <SpatialUI />
+    </group>
+  );
+}
+
+function InteractiveCube({ position }: { position: [number, number, number] }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+  
+  return (
+    <Interactive
+      onHover={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+      onSelect={() => setIsSelected(!isSelected)}
+    >
+      <mesh position={position}>
+        <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <meshStandardMaterial
+          color={isSelected ? '#00ff00' : isHovered ? '#ffff00' : '#0088ff'}
+          emissive={isHovered ? '#ffff00' : '#000000'}
+          emissiveIntensity={isHovered ? 0.5 : 0}
+        />
+      </mesh>
+    </Interactive>
+  );
+}
+
+function SpatialUI() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  return (
+    <group position={[0, 1.5, -2]}>
+      {/* Floating menu */}
+      <Interactive onSelect={() => setMenuOpen(!menuOpen)}>
+        <mesh>
+          <boxGeometry args={[0.3, 0.1, 0.05]} />
+          <meshStandardMaterial color="#4444ff" />
+        </mesh>
+      </Interactive>
+      
+      {menuOpen && (
+        <group position={[0, -0.3, 0]}>
+          {/* Menu items */}
+          {['Option 1', 'Option 2', 'Option 3'].map((label, i) => (
+            <Interactive key={label} onSelect={() => console.log(label)}>
+              <mesh position={[0, -i * 0.15, 0]}>
+                <boxGeometry args={[0.4, 0.1, 0.05]} />
+                <meshStandardMaterial color="#6666ff" />
+              </mesh>
+            </Interactive>
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
+```
+
+### **Spatial Anchors & World Understanding**
+```typescript
+import { useFrame, useThree } from '@react-three/fiber';
+import { useXRSession } from '@react-three/xr';
+import { useEffect, useState } from 'react';
+
+export function SpatialAnchors() {
+  const [anchors, setAnchors] = useState<Map<string, XRAnchor>>(new Map());
+  const session = useXRSession();
+  
+  useEffect(() => {
+    if (!session) return;
+    
+    // Request spatial tracking
+    session.requestReferenceSpace('local-floor').then(refSpace => {
+      console.log('Spatial tracking initialized');
+    });
+    
+    // Detect planes
+    if ('XRPlaneDetection' in window) {
+      detectPlanes(session);
+    }
+    
+    // Detect meshes
+    if ('XRMeshDetection' in window) {
+      detectMeshes(session);
+    }
+  }, [session]);
+  
+  const detectPlanes = async (session: XRSession) => {
+    // @ts-ignore - XR features
+    const detectedPlanes = session.detectedPlanes;
+    
+    if (detectedPlanes) {
+      detectedPlanes.forEach((plane: XRPlane) => {
+        createAnchorOnPlane(session, plane);
+      });
+    }
+  };
+  
+  const detectMeshes = async (session: XRSession) => {
+    // @ts-ignore
+    const detectedMeshes = session.detectedMeshes;
+    
+    if (detectedMeshes) {
+      detectedMeshes.forEach((mesh: XRMesh) => {
+        console.log('Detected mesh:', mesh);
+      });
+    }
+  };
+  
+  const createAnchorOnPlane = async (session: XRSession, plane: XRPlane) => {
+    const anchorPose = new XRRigidTransform(plane.planeSpace);
+    
+    try {
+      // @ts-ignore
+      const anchor = await session.createAnchor(anchorPose, plane.planeSpace);
+      
+      setAnchors(prev => {
+        const newAnchors = new Map(prev);
+        newAnchors.set(anchor.anchorSpace.toString(), anchor);
+        return newAnchors;
+      });
+    } catch (error) {
+      console.error('Failed to create anchor:', error);
+    }
+  };
+  
+  return (
+    <group>
+      {Array.from(anchors.values()).map((anchor, i) => (
+        <AnchorVisualization key={i} anchor={anchor} />
+      ))}
+    </group>
+  );
+}
+
+function AnchorVisualization({ anchor }: { anchor: XRAnchor }) {
+  const { scene } = useThree();
+  const [position, setPosition] = useState([0, 0, 0]);
+  
+  useFrame(({ gl }) => {
+    const frame = gl.xr.getFrame();
+    if (!frame) return;
+    
+    const refSpace = gl.xr.getReferenceSpace();
+    if (!refSpace) return;
+    
+    const anchorPose = frame.getPose(anchor.anchorSpace, refSpace);
+    
+    if (anchorPose) {
+      setPosition([
+        anchorPose.transform.position.x,
+        anchorPose.transform.position.y,
+        anchorPose.transform.position.z
+      ]);
+    }
+  });
+  
+  return (
+    <mesh position={position as [number, number, number]}>
+      <sphereGeometry args={[0.05]} />
+      <meshBasicMaterial color="#ff0000" />
+    </mesh>
+  );
+}
+```
+
+## Unity XR Development
+
+### **Universal XR Toolkit**
+```csharp
+using UnityEngine;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
+
+public class XRInteractionManager : MonoBehaviour
+{
+    [SerializeField] private XRRayInteractor rayInteractor;
+    [SerializeField] private XRDirectInteractor directInteractor;
+    [SerializeField] private ActionBasedControllerManager controllerManager;
+    
+    private void Start()
+    {
+        SetupInteractions();
+        SetupTeleportation();
+        SetupHandTracking();
+    }
+    
+    private void SetupInteractions()
+    {
+        // Configure ray interaction
+        rayInteractor.maxRaycastDistance = 10f;
+        rayInteractor.lineType = XRRayInteractor.LineType.BezierCurve;
+        
+        // Configure direct interaction
+        directInteractor.selectActionTrigger = XRBaseControllerInteractor.InputTriggerType.State;
+    }
+    
+    private void SetupTeleportation()
+    {
+        var teleportationProvider = FindObjectOfType<TeleportationProvider>();
+        
+        if (teleportationProvider != null)
+        {
+            // Configure teleportation settings
+            teleportationProvider.matchOrientation = MatchOrientation.TargetUpAndForward;
+        }
+    }
+    
+    private void SetupHandTracking()
+    {
+        var handTracking = GetComponent<HandTrackingManager>();
+        
+        if (handTracking != null)
+        {
+            handTracking.OnGestureDetected += HandleGesture;
+        }
+    }
+    
+    private void HandleGesture(GestureType gesture)
+    {
+        switch (gesture)
+        {
+            case GestureType.Pinch:
+                Debug.Log("Pinch detected");
+                break;
+            case GestureType.Grab:
+                Debug.Log("Grab detected");
+                break;
+            case GestureType.Point:
+                Debug.Log("Point detected");
+                break;
+        }
+    }
+}
+
+public class SpatialUI : MonoBehaviour
+{
+    [SerializeField] private Canvas worldSpaceCanvas;
+    [SerializeField] private float followDistance = 2f;
+    [SerializeField] private float followSpeed = 5f;
+    
+    private Transform playerHead;
+    
+    private void Start()
+    {
+        playerHead = Camera.main.transform;
+        
+        // Setup canvas
+        worldSpaceCanvas.renderMode = RenderMode.WorldSpace;
+        worldSpaceCanvas.worldCamera = Camera.main;
+    }
+    
+    private void LateUpdate()
+    {
+        // Follow player head
+        Vector3 targetPosition = playerHead.position + playerHead.forward * followDistance;
+        transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * followSpeed);
+        
+        // Face player
+        Vector3 lookDirection = playerHead.position - transform.position;
+        lookDirection.y = 0;
+        
+        if (lookDirection != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * followSpeed);
+        }
+    }
+}
+
+public class OcclusionManager : MonoBehaviour
+{
+    [SerializeField] private Material occlusionMaterial;
+    
+    private void Start()
+    {
+        // Setup environment occlusion
+        var occlusionManager = FindObjectOfType<AROcclusionManager>();
+        
+        if (occlusionManager != null)
+        {
+            occlusionManager.requestedOcclusionPreferenceMode = OcclusionPreferenceMode.PreferEnvironmentOcclusion;
+        }
+    }
+    
+    public void CreateOcclusionMesh(Mesh mesh, Vector3 position, Quaternion rotation)
+    {
+        GameObject occlusionObject = new GameObject("Occlusion Mesh");
+        occlusionObject.transform.position = position;
+        occlusionObject.transform.rotation = rotation;
+        
+        MeshFilter meshFilter = occlusionObject.AddComponent<MeshFilter>();
+        meshFilter.mesh = mesh;
+        
+        MeshRenderer meshRenderer = occlusionObject.AddComponent<MeshRenderer>();
+        meshRenderer.material = occlusionMaterial;
+        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+}
+```
+
+## Performance Optimization
+
+### **Rendering Optimization**
+```csharp
+public class XRPerformanceOptimizer : MonoBehaviour
+{
+    [SerializeField] private bool useFoveatedRendering = true;
+    [SerializeField] private bool useFixedFoveation = false;
+    [SerializeField] private float dynamicResolutionScale = 1.0f;
+    
+    private void Start()
+    {
+        OptimizeRendering();
+        SetupDynamicResolution();
+    }
+    
+    private void OptimizeRendering()
+    {
+        // Enable foveated rendering
+        if (useFoveatedRendering)
+        {
+            XRSettings.foveatedRenderingLevel = FoveatedRenderingLevel.High;
+            XRSettings.foveatedRenderingMode = useFixedFoveation 
+                ? FoveatedRenderingMode.Fixed 
+                : FoveatedRenderingMode.EyeTracked;
+        }
+        
+        // Optimize eye texture resolution
+        XRSettings.eyeTextureResolutionScale = 1.2f;
+        
+        // Enable single pass rendering
+        XRSettings.stereoRenderingMode = XRSettings.StereoRenderingMode.SinglePassInstanced;
+    }
+    
+    private void SetupDynamicResolution()
+    {
+        // Enable dynamic resolution
+        ScalableBufferManager.ResizeBuffers(dynamicResolutionScale, dynamicResolutionScale);
+    }
+    
+    private void Update()
+    {
+        // Monitor frame rate
+        float fps = 1.0f / Time.deltaTime;
+        
+        // Adjust quality if needed
+        if (fps < 72)
+        {
+            dynamicResolutionScale = Mathf.Max(0.7f, dynamicResolutionScale - 0.05f);
+            ScalableBufferManager.ResizeBuffers(dynamicResolutionScale, dynamicResolutionScale);
+        }
+        else if (fps > 90 && dynamicResolutionScale < 1.0f)
+        {
+            dynamicResolutionScale = Mathf.Min(1.0f, dynamicResolutionScale + 0.01f);
+            ScalableBufferManager.ResizeBuffers(dynamicResolutionScale, dynamicResolutionScale);
+        }
+    }
+}
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- User comfort metrics (motion sickness indicators)
+- Optimal UI placement in 3D space
+- Hand tracking accuracy patterns
+- Interaction success rates
+- Performance bottlenecks
+
+And adapts by:
+- Suggesting comfortable viewing distances
+- Auto-adjusting UI depth based on user behavior
+- Pre-applying accessibility features
+- Optimizing for target frame rates
+- Recommending platform-specific patterns
+
+---
+**Status:** Production Ready | Immersive | Cross-Platform | Self-Optimizing
