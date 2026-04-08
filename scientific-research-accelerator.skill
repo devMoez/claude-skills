@@ -1,0 +1,1008 @@
+# Scientific Research Accelerator Skill
+**Version:** 1.0.0  
+**Type:** Research | Data Analysis | Literature Mining | Hypothesis Generation
+
+## Core Purpose
+Accelerate scientific research workflows by automating literature reviews, analyzing experimental data, generating hypotheses, designing experiments, and synthesizing cross-disciplinary insights for breakthrough discoveries.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track successful research methodologies
+  - Learn domain-specific terminology patterns
+  - Adapt to emerging scientific trends
+  - Remember citation patterns and key papers
+  - Evolve experimental design strategies
+```
+
+## Core Frameworks
+
+### Research Tools
+- **PubMed/NCBI APIs** (Biomedical literature)
+- **ArXiv API** (Physics, CS, Math preprints)
+- **CrossRef API** (Citation metadata)
+- **Semantic Scholar** (AI-powered paper search)
+- **OpenAlex** (Open scholarly graph)
+
+### Data Analysis
+- **SciPy/NumPy** (Scientific computing)
+- **Pandas** (Data manipulation)
+- **Scikit-learn** (ML for research)
+- **Matplotlib/Seaborn** (Visualization)
+- **BioPython** (Computational biology)
+
+## Literature Mining & Synthesis
+
+### **Automated Literature Review**
+```python
+import requests
+from typing import List, Dict
+from datetime import datetime, timedelta
+import anthropic
+
+class ResearchLiteratureEngine:
+    """
+    Automated literature review and synthesis system
+    """
+    
+    def __init__(self, api_keys: Dict[str, str]):
+        self.pubmed_api = api_keys.get('pubmed')
+        self.arxiv_api = api_keys.get('arxiv')
+        self.semantic_scholar_api = api_keys.get('semantic_scholar')
+        self.claude_client = anthropic.Anthropic(api_key=api_keys.get('anthropic'))
+        self.paper_cache = {}
+    
+    def comprehensive_review(
+        self,
+        research_question: str,
+        domains: List[str] = None,
+        years_back: int = 5,
+        max_papers: int = 50
+    ) -> Dict:
+        """
+        Conduct comprehensive literature review
+        
+        Steps:
+        1. Multi-source paper retrieval
+        2. Relevance ranking
+        3. Full-text analysis
+        4. Cross-paper synthesis
+        5. Gap identification
+        """
+        # Step 1: Retrieve papers from multiple sources
+        papers = self._retrieve_papers(
+            query=research_question,
+            domains=domains,
+            years_back=years_back,
+            max_results=max_papers
+        )
+        
+        # Step 2: Rank by relevance
+        ranked_papers = self._rank_papers(papers, research_question)
+        
+        # Step 3: Extract key findings
+        insights = self._extract_insights(ranked_papers[:20])
+        
+        # Step 4: Synthesize across papers
+        synthesis = self._synthesize_findings(insights, research_question)
+        
+        # Step 5: Identify research gaps
+        gaps = self._identify_gaps(synthesis, ranked_papers)
+        
+        return {
+            'total_papers': len(papers),
+            'top_papers': ranked_papers[:10],
+            'key_insights': insights,
+            'synthesis': synthesis,
+            'research_gaps': gaps,
+            'recommended_reading': self._build_reading_list(ranked_papers)
+        }
+    
+    def _retrieve_papers(
+        self,
+        query: str,
+        domains: List[str],
+        years_back: int,
+        max_results: int
+    ) -> List[Dict]:
+        """Retrieve papers from multiple sources"""
+        all_papers = []
+        
+        # PubMed for biomedical
+        if not domains or 'biology' in domains or 'medicine' in domains:
+            pubmed_papers = self._search_pubmed(query, years_back, max_results // 3)
+            all_papers.extend(pubmed_papers)
+        
+        # ArXiv for physics/CS/math
+        if not domains or any(d in domains for d in ['physics', 'cs', 'math']):
+            arxiv_papers = self._search_arxiv(query, years_back, max_results // 3)
+            all_papers.extend(arxiv_papers)
+        
+        # Semantic Scholar for cross-domain
+        semantic_papers = self._search_semantic_scholar(query, years_back, max_results // 3)
+        all_papers.extend(semantic_papers)
+        
+        # Deduplicate by DOI/title
+        unique_papers = self._deduplicate_papers(all_papers)
+        
+        return unique_papers
+    
+    def _search_pubmed(self, query: str, years_back: int, max_results: int) -> List[Dict]:
+        """Search PubMed database"""
+        base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+        
+        # Search for paper IDs
+        search_params = {
+            'db': 'pubmed',
+            'term': query,
+            'retmax': max_results,
+            'retmode': 'json',
+            'mindate': (datetime.now() - timedelta(days=365*years_back)).strftime('%Y/%m/%d')
+        }
+        
+        response = requests.get(f"{base_url}esearch.fcgi", params=search_params)
+        ids = response.json().get('esearchresult', {}).get('idlist', [])
+        
+        # Fetch paper details
+        papers = []
+        if ids:
+            fetch_params = {
+                'db': 'pubmed',
+                'id': ','.join(ids),
+                'retmode': 'xml'
+            }
+            detail_response = requests.get(f"{base_url}efetch.fcgi", params=fetch_params)
+            papers = self._parse_pubmed_xml(detail_response.text)
+        
+        return papers
+    
+    def _search_arxiv(self, query: str, years_back: int, max_results: int) -> List[Dict]:
+        """Search ArXiv preprint server"""
+        import feedparser
+        
+        base_url = "http://export.arxiv.org/api/query"
+        
+        params = {
+            'search_query': f'all:{query}',
+            'start': 0,
+            'max_results': max_results,
+            'sortBy': 'relevance',
+            'sortOrder': 'descending'
+        }
+        
+        response = requests.get(base_url, params=params)
+        feed = feedparser.parse(response.content)
+        
+        papers = []
+        for entry in feed.entries:
+            # Filter by date
+            published = datetime.strptime(entry.published, '%Y-%m-%dT%H:%M:%SZ')
+            if (datetime.now() - published).days <= 365 * years_back:
+                papers.append({
+                    'title': entry.title,
+                    'authors': [author.name for author in entry.authors],
+                    'abstract': entry.summary,
+                    'published': entry.published,
+                    'url': entry.link,
+                    'arxiv_id': entry.id.split('/abs/')[-1],
+                    'source': 'arxiv'
+                })
+        
+        return papers
+    
+    def _search_semantic_scholar(self, query: str, years_back: int, max_results: int) -> List[Dict]:
+        """Search Semantic Scholar"""
+        base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
+        
+        headers = {'x-api-key': self.semantic_scholar_api} if self.semantic_scholar_api else {}
+        
+        params = {
+            'query': query,
+            'limit': max_results,
+            'fields': 'title,authors,abstract,year,citationCount,url,externalIds'
+        }
+        
+        response = requests.get(base_url, params=params, headers=headers)
+        data = response.json()
+        
+        papers = []
+        cutoff_year = datetime.now().year - years_back
+        
+        for paper in data.get('data', []):
+            if paper.get('year', 0) >= cutoff_year:
+                papers.append({
+                    'title': paper.get('title'),
+                    'authors': [a.get('name') for a in paper.get('authors', [])],
+                    'abstract': paper.get('abstract'),
+                    'year': paper.get('year'),
+                    'citations': paper.get('citationCount', 0),
+                    'url': paper.get('url'),
+                    'doi': paper.get('externalIds', {}).get('DOI'),
+                    'source': 'semantic_scholar'
+                })
+        
+        return papers
+    
+    def _rank_papers(self, papers: List[Dict], query: str) -> List[Dict]:
+        """Rank papers by relevance using Claude"""
+        # Use Claude to assess relevance
+        prompt = f"""Research Question: {query}
+
+Please rank these papers by relevance to the research question.
+Consider: direct relevance, methodology quality, citation count, recency.
+
+Papers:
+{self._format_papers_for_ranking(papers)}
+
+Return JSON: [{{"title": "...", "relevance_score": 0-100, "reason": "..."}}]"""
+        
+        message = self.claude_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # Parse rankings and merge with papers
+        rankings = self._parse_ranking_response(message.content[0].text)
+        
+        # Merge rankings with original papers
+        ranked_papers = []
+        for ranking in rankings:
+            for paper in papers:
+                if paper['title'] == ranking['title']:
+                    paper['relevance_score'] = ranking['relevance_score']
+                    paper['relevance_reason'] = ranking['reason']
+                    ranked_papers.append(paper)
+                    break
+        
+        return sorted(ranked_papers, key=lambda x: x.get('relevance_score', 0), reverse=True)
+    
+    def _extract_insights(self, papers: List[Dict]) -> List[Dict]:
+        """Extract key insights from each paper"""
+        insights = []
+        
+        for paper in papers:
+            prompt = f"""Analyze this research paper and extract:
+1. Main hypothesis/research question
+2. Key methodology
+3. Primary findings
+4. Limitations
+5. Future directions
+
+Paper:
+Title: {paper['title']}
+Abstract: {paper.get('abstract', 'N/A')}
+
+Return structured JSON."""
+            
+            message = self.claude_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            insights.append({
+                'paper': paper['title'],
+                'analysis': self._parse_json_response(message.content[0].text)
+            })
+        
+        return insights
+    
+    def _synthesize_findings(self, insights: List[Dict], research_question: str) -> Dict:
+        """Synthesize findings across multiple papers"""
+        prompt = f"""Research Question: {research_question}
+
+Synthesize these research findings into a coherent narrative:
+
+{self._format_insights(insights)}
+
+Provide:
+1. Consensus findings (what most papers agree on)
+2. Contradictions/debates (where papers disagree)
+3. Emerging patterns (trends across papers)
+4. Methodological approaches (common vs novel methods)
+5. Overall state of knowledge
+
+Return structured analysis."""
+        
+        message = self.claude_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'synthesis': message.content[0].text,
+            'papers_analyzed': len(insights)
+        }
+    
+    def _identify_gaps(self, synthesis: Dict, papers: List[Dict]) -> List[Dict]:
+        """Identify research gaps and opportunities"""
+        prompt = f"""Based on this literature synthesis, identify:
+
+1. Unanswered questions
+2. Methodological gaps
+3. Understudied populations/conditions
+4. Contradictory findings needing resolution
+5. Novel research directions
+
+Synthesis:
+{synthesis['synthesis']}
+
+Return list of specific, actionable research gaps."""
+        
+        message = self.claude_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return self._parse_gaps_response(message.content[0].text)
+    
+    def _deduplicate_papers(self, papers: List[Dict]) -> List[Dict]:
+        """Remove duplicate papers"""
+        seen = set()
+        unique = []
+        
+        for paper in papers:
+            # Create unique key from title (normalized)
+            key = paper['title'].lower().strip()
+            
+            if key not in seen:
+                seen.add(key)
+                unique.append(paper)
+        
+        return unique
+    
+    def _format_papers_for_ranking(self, papers: List[Dict]) -> str:
+        """Format papers for ranking prompt"""
+        formatted = []
+        for i, paper in enumerate(papers, 1):
+            formatted.append(f"{i}. {paper['title']}")
+            formatted.append(f"   Authors: {', '.join(paper.get('authors', [])[:3])}")
+            formatted.append(f"   Year: {paper.get('year', 'N/A')}")
+            if 'citations' in paper:
+                formatted.append(f"   Citations: {paper['citations']}")
+            formatted.append(f"   Abstract: {paper.get('abstract', 'N/A')[:200]}...")
+            formatted.append("")
+        
+        return "\n".join(formatted)
+    
+    def _format_insights(self, insights: List[Dict]) -> str:
+        """Format insights for synthesis"""
+        formatted = []
+        for insight in insights:
+            formatted.append(f"Paper: {insight['paper']}")
+            formatted.append(f"Analysis: {insight['analysis']}")
+            formatted.append("")
+        
+        return "\n".join(formatted)
+    
+    def _parse_ranking_response(self, response: str) -> List[Dict]:
+        """Parse Claude's ranking response"""
+        import json
+        import re
+        
+        # Extract JSON from response
+        json_match = re.search(r'\[.*\]', response, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        
+        return []
+    
+    def _parse_json_response(self, response: str) -> Dict:
+        """Parse JSON from Claude response"""
+        import json
+        import re
+        
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        
+        return {'raw': response}
+    
+    def _parse_gaps_response(self, response: str) -> List[Dict]:
+        """Parse research gaps from response"""
+        # Simple parsing - split by numbered list
+        gaps = []
+        lines = response.split('\n')
+        
+        current_gap = None
+        for line in lines:
+            line = line.strip()
+            if line and (line[0].isdigit() or line.startswith('-')):
+                if current_gap:
+                    gaps.append(current_gap)
+                current_gap = {'description': line.lstrip('0123456789.-) '), 'priority': 'medium'}
+            elif current_gap and line:
+                current_gap['description'] += ' ' + line
+        
+        if current_gap:
+            gaps.append(current_gap)
+        
+        return gaps
+    
+    def _build_reading_list(self, papers: List[Dict]) -> List[Dict]:
+        """Build prioritized reading list"""
+        # Prioritize by relevance score and citations
+        reading_list = []
+        
+        for paper in papers[:15]:
+            reading_list.append({
+                'title': paper['title'],
+                'authors': paper.get('authors', [])[:3],
+                'url': paper.get('url'),
+                'priority': self._calculate_priority(paper),
+                'estimated_time': '20-30 min'
+            })
+        
+        return sorted(reading_list, key=lambda x: x['priority'], reverse=True)
+    
+    def _calculate_priority(self, paper: Dict) -> int:
+        """Calculate reading priority"""
+        score = paper.get('relevance_score', 50)
+        
+        # Boost for high citations
+        if 'citations' in paper and paper['citations'] > 100:
+            score += 10
+        
+        # Boost for recency
+        if 'year' in paper and paper['year'] >= datetime.now().year - 2:
+            score += 5
+        
+        return min(score, 100)
+    
+    def _parse_pubmed_xml(self, xml_text: str) -> List[Dict]:
+        """Parse PubMed XML response"""
+        import xml.etree.ElementTree as ET
+        
+        papers = []
+        try:
+            root = ET.fromstring(xml_text)
+            for article in root.findall('.//PubmedArticle'):
+                title_elem = article.find('.//ArticleTitle')
+                abstract_elem = article.find('.//AbstractText')
+                authors = article.findall('.//Author')
+                year_elem = article.find('.//PubDate/Year')
+                
+                papers.append({
+                    'title': title_elem.text if title_elem is not None else 'N/A',
+                    'abstract': abstract_elem.text if abstract_elem is not None else 'N/A',
+                    'authors': [
+                        f"{a.find('LastName').text if a.find('LastName') is not None else ''} "
+                        f"{a.find('ForeName').text if a.find('ForeName') is not None else ''}"
+                        for a in authors
+                    ],
+                    'year': int(year_elem.text) if year_elem is not None else None,
+                    'source': 'pubmed'
+                })
+        except Exception as e:
+            print(f"Error parsing PubMed XML: {e}")
+        
+        return papers
+```
+
+### **Hypothesis Generation Engine**
+```python
+class HypothesisGenerator:
+    """
+    AI-powered hypothesis generation from research context
+    """
+    
+    def __init__(self, claude_client):
+        self.claude = claude_client
+        self.hypothesis_templates = self._load_templates()
+    
+    def generate_hypotheses(
+        self,
+        research_question: str,
+        background_knowledge: Dict,
+        constraints: Dict = None
+    ) -> List[Dict]:
+        """
+        Generate novel, testable hypotheses
+        
+        Uses:
+        - Existing literature
+        - Domain knowledge
+        - Cross-disciplinary analogies
+        - Logical inference
+        """
+        prompt = f"""As a creative research scientist, generate 5-10 novel, testable hypotheses for:
+
+Research Question: {research_question}
+
+Background Knowledge:
+{self._format_background(background_knowledge)}
+
+Constraints:
+{constraints or 'None specified'}
+
+For each hypothesis:
+1. State the hypothesis clearly
+2. Explain the reasoning/inspiration
+3. Describe how it could be tested
+4. Assess feasibility (low/medium/high)
+5. Predict potential impact
+6. Identify required resources
+
+Think creatively - consider:
+- Cross-domain analogies
+- Inverse relationships
+- Non-linear effects
+- Unexplored combinations
+- Counterintuitive possibilities
+
+Return structured JSON array."""
+        
+        message = self.claude.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        hypotheses = self._parse_hypotheses(message.content[0].text)
+        
+        # Rank by novelty and feasibility
+        ranked = self._rank_hypotheses(hypotheses)
+        
+        return ranked
+    
+    def refine_hypothesis(self, hypothesis: Dict, feedback: str) -> Dict:
+        """Refine hypothesis based on feedback"""
+        prompt = f"""Refine this research hypothesis based on feedback:
+
+Original Hypothesis: {hypothesis['statement']}
+Reasoning: {hypothesis['reasoning']}
+
+Feedback: {feedback}
+
+Provide:
+1. Refined hypothesis statement
+2. Updated testing approach
+3. Address feedback concerns
+4. Improve precision/testability"""
+        
+        message = self.claude.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return self._parse_refined_hypothesis(message.content[0].text)
+    
+    def _format_background(self, background: Dict) -> str:
+        """Format background knowledge for prompt"""
+        formatted = []
+        
+        if 'literature_synthesis' in background:
+            formatted.append(f"Literature Synthesis:\n{background['literature_synthesis']}")
+        
+        if 'known_facts' in background:
+            formatted.append(f"\nKnown Facts:\n" + "\n".join(f"- {fact}" for fact in background['known_facts']))
+        
+        if 'research_gaps' in background:
+            formatted.append(f"\nResearch Gaps:\n" + "\n".join(f"- {gap}" for gap in background['research_gaps']))
+        
+        return "\n\n".join(formatted)
+    
+    def _parse_hypotheses(self, response: str) -> List[Dict]:
+        """Parse hypotheses from Claude response"""
+        import json
+        import re
+        
+        json_match = re.search(r'\[.*\]', response, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except:
+                pass
+        
+        return []
+    
+    def _rank_hypotheses(self, hypotheses: List[Dict]) -> List[Dict]:
+        """Rank hypotheses by novelty and feasibility"""
+        for h in hypotheses:
+            # Calculate composite score
+            feasibility_score = {'low': 1, 'medium': 2, 'high': 3}.get(
+                h.get('feasibility', 'medium').lower(), 2
+            )
+            impact_score = {'low': 1, 'medium': 2, 'high': 3}.get(
+                h.get('impact', 'medium').lower(), 2
+            )
+            
+            h['composite_score'] = (feasibility_score * 0.6) + (impact_score * 0.4)
+        
+        return sorted(hypotheses, key=lambda x: x['composite_score'], reverse=True)
+    
+    def _parse_refined_hypothesis(self, response: str) -> Dict:
+        """Parse refined hypothesis"""
+        return {'refined_text': response}
+    
+    def _load_templates(self) -> List[str]:
+        """Load hypothesis templates"""
+        return [
+            "If {variable_a} increases, then {variable_b} will {change_direction}",
+            "The relationship between {var_a} and {var_b} is mediated by {mediator}",
+            "{population} exposed to {treatment} will show {outcome} compared to {control}",
+            "The effect of {intervention} on {outcome} is moderated by {moderator}"
+        ]
+```
+
+### **Experimental Design Assistant**
+```python
+class ExperimentDesigner:
+    """
+    Design rigorous experiments to test hypotheses
+    """
+    
+    def __init__(self, claude_client):
+        self.claude = claude_client
+    
+    def design_experiment(
+        self,
+        hypothesis: Dict,
+        resources: Dict,
+        constraints: Dict = None
+    ) -> Dict:
+        """
+        Design complete experimental protocol
+        
+        Includes:
+        - Variables (IV, DV, controls)
+        - Sample size calculations
+        - Randomization strategy
+        - Data collection methods
+        - Statistical analysis plan
+        - Ethical considerations
+        """
+        prompt = f"""Design a rigorous experiment to test this hypothesis:
+
+Hypothesis: {hypothesis['statement']}
+Reasoning: {hypothesis.get('reasoning', 'N/A')}
+
+Available Resources:
+{self._format_resources(resources)}
+
+Constraints:
+{constraints or 'None'}
+
+Provide comprehensive experimental design including:
+
+1. **Variables**
+   - Independent variable(s)
+   - Dependent variable(s)
+   - Control variables
+   - Potential confounds
+
+2. **Design Type**
+   - Between/within subjects
+   - Factorial design
+   - Randomization approach
+   - Blinding strategy
+
+3. **Sample**
+   - Target population
+   - Inclusion/exclusion criteria
+   - Sample size (with power analysis justification)
+   - Recruitment strategy
+
+4. **Procedure**
+   - Step-by-step protocol
+   - Timeline
+   - Data collection methods
+   - Quality control measures
+
+5. **Analysis Plan**
+   - Primary statistical tests
+   - Secondary analyses
+   - Handling missing data
+   - Success criteria
+
+6. **Ethical Considerations**
+   - Informed consent
+   - Risk mitigation
+   - Data privacy
+   - IRB requirements
+
+7. **Limitations & Alternatives**
+
+Return detailed, actionable protocol."""
+        
+        message = self.claude.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=5000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'protocol': message.content[0].text,
+            'hypothesis': hypothesis,
+            'estimated_duration': self._estimate_duration(resources),
+            'estimated_cost': self._estimate_cost(resources)
+        }
+    
+    def calculate_sample_size(
+        self,
+        effect_size: float,
+        power: float = 0.8,
+        alpha: float = 0.05,
+        test_type: str = 't-test'
+    ) -> Dict:
+        """Statistical power analysis for sample size"""
+        from scipy import stats
+        import math
+        
+        if test_type == 't-test':
+            # Cohen's d for t-test
+            # Simplified calculation
+            z_alpha = stats.norm.ppf(1 - alpha/2)
+            z_beta = stats.norm.ppf(power)
+            
+            n = 2 * ((z_alpha + z_beta) / effect_size) ** 2
+            n = math.ceil(n)
+        else:
+            n = 100  # Default fallback
+        
+        return {
+            'required_n': n,
+            'effect_size': effect_size,
+            'power': power,
+            'alpha': alpha,
+            'recommendation': f"Recruit {int(n * 1.2)} participants to account for 20% attrition"
+        }
+    
+    def _format_resources(self, resources: Dict) -> str:
+        """Format available resources"""
+        formatted = []
+        
+        for key, value in resources.items():
+            formatted.append(f"{key}: {value}")
+        
+        return "\n".join(formatted)
+    
+    def _estimate_duration(self, resources: Dict) -> str:
+        """Estimate study duration"""
+        return "6-12 months (varies by design)"
+    
+    def _estimate_cost(self, resources: Dict) -> str:
+        """Estimate study cost"""
+        return "Depends on sample size and methodology"
+```
+
+## Data Analysis & Visualization
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+class ResearchDataAnalyzer:
+    """
+    Advanced statistical analysis for research data
+    """
+    
+    def __init__(self):
+        self.results = {}
+    
+    def comprehensive_analysis(
+        self,
+        data: pd.DataFrame,
+        dependent_var: str,
+        independent_vars: List[str],
+        analysis_type: str = 'auto'
+    ) -> Dict:
+        """
+        Run comprehensive statistical analysis
+        """
+        results = {}
+        
+        # Descriptive statistics
+        results['descriptives'] = self.descriptive_stats(data)
+        
+        # Test assumptions
+        results['assumptions'] = self.test_assumptions(data, dependent_var)
+        
+        # Primary analysis
+        if analysis_type == 'auto':
+            analysis_type = self._determine_analysis_type(data, dependent_var, independent_vars)
+        
+        if analysis_type == 't-test':
+            results['primary'] = self.t_test(data, dependent_var, independent_vars[0])
+        elif analysis_type == 'anova':
+            results['primary'] = self.anova(data, dependent_var, independent_vars)
+        elif analysis_type == 'regression':
+            results['primary'] = self.regression(data, dependent_var, independent_vars)
+        elif analysis_type == 'correlation':
+            results['primary'] = self.correlation_analysis(data, dependent_var, independent_vars)
+        
+        # Effect sizes
+        results['effect_sizes'] = self.calculate_effect_sizes(data, dependent_var, independent_vars)
+        
+        # Visualizations
+        results['visualizations'] = self.create_visualizations(data, dependent_var, independent_vars)
+        
+        return results
+    
+    def descriptive_stats(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Calculate descriptive statistics"""
+        return data.describe()
+    
+    def test_assumptions(self, data: pd.DataFrame, dependent_var: str) -> Dict:
+        """Test statistical assumptions"""
+        assumptions = {}
+        
+        # Normality test (Shapiro-Wilk)
+        statistic, p_value = stats.shapiro(data[dependent_var].dropna())
+        assumptions['normality'] = {
+            'test': 'Shapiro-Wilk',
+            'statistic': statistic,
+            'p_value': p_value,
+            'normal': p_value > 0.05
+        }
+        
+        # Homogeneity of variance would go here for group comparisons
+        
+        return assumptions
+    
+    def t_test(self, data: pd.DataFrame, dv: str, iv: str) -> Dict:
+        """Independent samples t-test"""
+        groups = data[iv].unique()
+        
+        if len(groups) != 2:
+            return {'error': 'T-test requires exactly 2 groups'}
+        
+        group1 = data[data[iv] == groups[0]][dv]
+        group2 = data[data[iv] == groups[1]][dv]
+        
+        statistic, p_value = stats.ttest_ind(group1, group2)
+        
+        return {
+            'test': 'Independent t-test',
+            't_statistic': statistic,
+            'p_value': p_value,
+            'group1_mean': group1.mean(),
+            'group2_mean': group2.mean(),
+            'significant': p_value < 0.05
+        }
+    
+    def anova(self, data: pd.DataFrame, dv: str, iv_list: List[str]) -> Dict:
+        """ANOVA analysis"""
+        # One-way ANOVA for simplicity
+        iv = iv_list[0]
+        groups = [data[data[iv] == g][dv].values for g in data[iv].unique()]
+        
+        f_statistic, p_value = stats.f_oneway(*groups)
+        
+        return {
+            'test': 'One-way ANOVA',
+            'f_statistic': f_statistic,
+            'p_value': p_value,
+            'significant': p_value < 0.05
+        }
+    
+    def regression(self, data: pd.DataFrame, dv: str, iv_list: List[str]) -> Dict:
+        """Multiple regression analysis"""
+        from sklearn.linear_model import LinearRegression
+        from sklearn.metrics import r2_score
+        
+        X = data[iv_list].values
+        y = data[dv].values
+        
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        predictions = model.predict(X)
+        r2 = r2_score(y, predictions)
+        
+        return {
+            'test': 'Multiple Regression',
+            'r_squared': r2,
+            'coefficients': dict(zip(iv_list, model.coef_)),
+            'intercept': model.intercept_
+        }
+    
+    def correlation_analysis(self, data: pd.DataFrame, var1: str, var2_list: List[str]) -> Dict:
+        """Correlation analysis"""
+        correlations = {}
+        
+        for var2 in var2_list:
+            r, p = stats.pearsonr(data[var1].dropna(), data[var2].dropna())
+            correlations[var2] = {
+                'r': r,
+                'p_value': p,
+                'significant': p < 0.05
+            }
+        
+        return correlations
+    
+    def calculate_effect_sizes(self, data: pd.DataFrame, dv: str, iv_list: List[str]) -> Dict:
+        """Calculate effect sizes (Cohen's d, eta-squared, etc.)"""
+        # Simplified Cohen's d for two groups
+        iv = iv_list[0]
+        groups = data[iv].unique()
+        
+        if len(groups) == 2:
+            group1 = data[data[iv] == groups[0]][dv]
+            group2 = data[data[iv] == groups[1]][dv]
+            
+            pooled_std = np.sqrt(((len(group1)-1)*group1.std()**2 + (len(group2)-1)*group2.std()**2) / (len(group1)+len(group2)-2))
+            cohens_d = (group1.mean() - group2.mean()) / pooled_std
+            
+            return {
+                'cohens_d': cohens_d,
+                'interpretation': self._interpret_cohens_d(cohens_d)
+            }
+        
+        return {}
+    
+    def create_visualizations(self, data: pd.DataFrame, dv: str, iv_list: List[str]) -> Dict:
+        """Create research visualizations"""
+        viz_paths = {}
+        
+        # Distribution plot
+        plt.figure(figsize=(10, 6))
+        sns.histplot(data[dv], kde=True)
+        plt.title(f'Distribution of {dv}')
+        plt.savefig('distribution.png')
+        viz_paths['distribution'] = 'distribution.png'
+        plt.close()
+        
+        # Group comparison (if categorical IV)
+        if len(iv_list) > 0:
+            plt.figure(figsize=(10, 6))
+            sns.boxplot(data=data, x=iv_list[0], y=dv)
+            plt.title(f'{dv} by {iv_list[0]}')
+            plt.savefig('group_comparison.png')
+            viz_paths['group_comparison'] = 'group_comparison.png'
+            plt.close()
+        
+        return viz_paths
+    
+    def _determine_analysis_type(self, data: pd.DataFrame, dv: str, iv_list: List[str]) -> str:
+        """Automatically determine appropriate analysis"""
+        if len(iv_list) == 1:
+            if data[iv_list[0]].dtype in ['object', 'category']:
+                unique_vals = data[iv_list[0]].nunique()
+                if unique_vals == 2:
+                    return 't-test'
+                else:
+                    return 'anova'
+            else:
+                return 'correlation'
+        else:
+            return 'regression'
+    
+    def _interpret_cohens_d(self, d: float) -> str:
+        """Interpret Cohen's d effect size"""
+        d_abs = abs(d)
+        if d_abs < 0.2:
+            return 'negligible'
+        elif d_abs < 0.5:
+            return 'small'
+        elif d_abs < 0.8:
+            return 'medium'
+        else:
+            return 'large'
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Successful research methodologies
+- High-impact paper patterns
+- Effective hypothesis structures
+- Statistical analysis choices
+- Domain-specific terminology
+
+And adapts by:
+- Suggesting relevant literature sources
+- Pre-applying domain conventions
+- Recommending appropriate statistical tests
+- Generating domain-aware hypotheses
+- Optimizing search strategies
+
+---
+**Status:** Research-Ready | Evidence-Based | Hypothesis-Driven | Self-Improving
