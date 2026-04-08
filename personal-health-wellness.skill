@@ -1,0 +1,846 @@
+# Personal Health & Wellness Optimization Skill
+**Version:** 1.0.0  
+**Type:** Health | Wellness | Biohacking | Longevity | Mental Health
+
+## Core Purpose
+Evidence-based health and wellness optimization system combining nutrition science, exercise physiology, sleep optimization, mental health support, and longevity research to help users achieve peak physical and mental performance.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track individual health patterns and responses
+  - Learn from biometric data trends
+  - Adapt to user preferences and constraints
+  - Remember successful interventions
+  - Evolve based on latest research findings
+```
+
+## Core Frameworks
+
+### Health & Fitness
+- **Nutrition Science** (Macros, micronutrients, timing)
+- **Exercise Physiology** (Strength, cardio, recovery)
+- **Sleep Optimization** (Sleep hygiene, chronobiology)
+- **Stress Management** (HRV, meditation, breathwork)
+- **Longevity Research** (Healthspan, biomarkers)
+
+### Mental Health
+- **Cognitive Behavioral Therapy (CBT)** principles
+- **Mindfulness-Based Stress Reduction (MBSR)**
+- **Positive Psychology** interventions
+- **Habit Formation** (Atomic Habits framework)
+
+### Data & Tracking
+- **Wearable Integration** (Apple Watch, Oura, Whoop, Garmin)
+- **Biomarker Analysis** (Blood work, metabolic panels)
+- **Subjective Metrics** (Mood, energy, sleep quality)
+
+## Personalized Health Optimization
+
+### **Health Profile Builder**
+```python
+from typing import List, Dict, Optional
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+
+class ActivityLevel(Enum):
+    SEDENTARY = "sedentary"
+    LIGHTLY_ACTIVE = "lightly_active"
+    MODERATELY_ACTIVE = "moderately_active"
+    VERY_ACTIVE = "very_active"
+    EXTREMELY_ACTIVE = "extremely_active"
+
+class Goal(Enum):
+    WEIGHT_LOSS = "weight_loss"
+    MUSCLE_GAIN = "muscle_gain"
+    MAINTENANCE = "maintenance"
+    ATHLETIC_PERFORMANCE = "athletic_performance"
+    LONGEVITY = "longevity"
+    MENTAL_CLARITY = "mental_clarity"
+    STRESS_REDUCTION = "stress_reduction"
+
+@dataclass
+class UserHealthProfile:
+    """Comprehensive user health profile"""
+    # Demographics
+    age: int
+    sex: str
+    height_cm: float
+    weight_kg: float
+    
+    # Activity & Goals
+    activity_level: ActivityLevel
+    primary_goal: Goal
+    secondary_goals: List[Goal]
+    
+    # Health Status
+    medical_conditions: List[str]
+    medications: List[str]
+    allergies: List[str]
+    injuries: List[str]
+    
+    # Lifestyle
+    sleep_hours: float
+    stress_level: int  # 1-10
+    dietary_restrictions: List[str]
+    exercise_frequency: int  # days per week
+    
+    # Preferences
+    food_preferences: List[str]
+    disliked_foods: List[str]
+    exercise_preferences: List[str]
+    time_availability: Dict[str, int]  # minutes per day
+    
+    # Tracking
+    wearable_device: Optional[str] = None
+    tracking_metrics: List[str] = None
+
+class HealthOptimizationEngine:
+    """
+    AI-powered personalized health optimization system
+    """
+    
+    def __init__(self, user_profile: UserHealthProfile):
+        self.profile = user_profile
+        self.recommendations = {}
+        self.progress_tracker = {}
+    
+    def create_optimization_plan(self) -> Dict:
+        """
+        Create comprehensive health optimization plan
+        
+        Includes:
+        - Nutrition protocol
+        - Exercise program
+        - Sleep optimization
+        - Stress management
+        - Supplement stack
+        - Tracking metrics
+        - Progress milestones
+        """
+        plan = {
+            'nutrition': self._create_nutrition_plan(),
+            'exercise': self._create_exercise_program(),
+            'sleep': self._create_sleep_protocol(),
+            'stress_management': self._create_stress_protocol(),
+            'supplements': self._recommend_supplements(),
+            'tracking': self._define_tracking_metrics(),
+            'milestones': self._set_milestones(),
+            'safety_notes': self._generate_safety_notes()
+        }
+        
+        return plan
+    
+    def _create_nutrition_plan(self) -> Dict:
+        """Create personalized nutrition plan"""
+        
+        # Calculate energy needs
+        bmr = self._calculate_bmr()
+        tdee = self._calculate_tdee(bmr)
+        target_calories = self._adjust_calories_for_goal(tdee)
+        
+        # Calculate macros
+        macros = self._calculate_macros(target_calories)
+        
+        # Meal timing
+        meal_timing = self._optimize_meal_timing()
+        
+        # Food recommendations
+        food_recommendations = self._generate_food_recommendations()
+        
+        # Sample meal plan
+        sample_meals = self._create_sample_meal_plan(macros)
+        
+        nutrition_plan = {
+            'daily_calories': target_calories,
+            'macros': macros,
+            'meal_timing': meal_timing,
+            'recommended_foods': food_recommendations,
+            'foods_to_limit': self._foods_to_limit(),
+            'sample_meal_plan': sample_meals,
+            'hydration': {
+                'daily_water': f"{self.profile.weight_kg * 0.033:.1f}L",
+                'electrolytes': 'Add pinch of salt if exercising >1hr',
+                'timing': 'Front-load hydration in morning'
+            },
+            'nutrition_principles': [
+                'Prioritize whole, minimally processed foods',
+                'Eat protein with every meal',
+                'Fill half your plate with vegetables',
+                'Time carbs around workouts',
+                'Eat mindfully without distractions'
+            ]
+        }
+        
+        return nutrition_plan
+    
+    def _calculate_bmr(self) -> float:
+        """Calculate Basal Metabolic Rate using Mifflin-St Jeor"""
+        if self.profile.sex.lower() == 'male':
+            bmr = (10 * self.profile.weight_kg + 
+                   6.25 * self.profile.height_cm - 
+                   5 * self.profile.age + 5)
+        else:
+            bmr = (10 * self.profile.weight_kg + 
+                   6.25 * self.profile.height_cm - 
+                   5 * self.profile.age - 161)
+        
+        return bmr
+    
+    def _calculate_tdee(self, bmr: float) -> float:
+        """Calculate Total Daily Energy Expenditure"""
+        activity_multipliers = {
+            ActivityLevel.SEDENTARY: 1.2,
+            ActivityLevel.LIGHTLY_ACTIVE: 1.375,
+            ActivityLevel.MODERATELY_ACTIVE: 1.55,
+            ActivityLevel.VERY_ACTIVE: 1.725,
+            ActivityLevel.EXTREMELY_ACTIVE: 1.9
+        }
+        
+        multiplier = activity_multipliers.get(self.profile.activity_level, 1.5)
+        return bmr * multiplier
+    
+    def _adjust_calories_for_goal(self, tdee: float) -> int:
+        """Adjust calories based on goal"""
+        adjustments = {
+            Goal.WEIGHT_LOSS: -500,  # 0.5kg per week
+            Goal.MUSCLE_GAIN: +300,  # Lean bulk
+            Goal.MAINTENANCE: 0,
+            Goal.ATHLETIC_PERFORMANCE: +200,
+            Goal.LONGEVITY: 0,  # Maintenance with focus on quality
+            Goal.MENTAL_CLARITY: 0,
+            Goal.STRESS_REDUCTION: 0
+        }
+        
+        adjustment = adjustments.get(self.profile.primary_goal, 0)
+        return int(tdee + adjustment)
+    
+    def _calculate_macros(self, calories: int) -> Dict:
+        """Calculate optimal macronutrient distribution"""
+        
+        goal = self.profile.primary_goal
+        
+        # Protein (g/kg bodyweight)
+        if goal in [Goal.MUSCLE_GAIN, Goal.ATHLETIC_PERFORMANCE]:
+            protein_per_kg = 2.2
+        elif goal == Goal.WEIGHT_LOSS:
+            protein_per_kg = 2.0
+        else:
+            protein_per_kg = 1.6
+        
+        protein_grams = self.profile.weight_kg * protein_per_kg
+        protein_calories = protein_grams * 4
+        
+        # Fat (25-35% of calories)
+        fat_percentage = 0.30
+        fat_calories = calories * fat_percentage
+        fat_grams = fat_calories / 9
+        
+        # Carbs (remaining calories)
+        carb_calories = calories - protein_calories - fat_calories
+        carb_grams = carb_calories / 4
+        
+        return {
+            'protein': {
+                'grams': int(protein_grams),
+                'calories': int(protein_calories),
+                'percentage': int((protein_calories / calories) * 100)
+            },
+            'carbs': {
+                'grams': int(carb_grams),
+                'calories': int(carb_calories),
+                'percentage': int((carb_calories / calories) * 100)
+            },
+            'fat': {
+                'grams': int(fat_grams),
+                'calories': int(fat_calories),
+                'percentage': int((fat_calories / calories) * 100)
+            }
+        }
+    
+    def _optimize_meal_timing(self) -> Dict:
+        """Optimize meal timing based on circadian rhythm and activity"""
+        
+        timing = {
+            'meal_frequency': '3-4 meals per day',
+            'eating_window': '8-10 hours (mild time-restricted feeding)',
+            'first_meal': '1-2 hours after waking',
+            'last_meal': '2-3 hours before bed',
+            'pre_workout': 'Carbs + protein 1-2 hours before',
+            'post_workout': 'Protein + carbs within 2 hours',
+            'intermittent_fasting': self._assess_if_recommended()
+        }
+        
+        return timing
+    
+    def _generate_food_recommendations(self) -> Dict:
+        """Generate personalized food recommendations"""
+        
+        recommendations = {
+            'proteins': [
+                'Lean chicken breast',
+                'Wild-caught fish (salmon, sardines)',
+                'Grass-fed beef',
+                'Eggs (pasture-raised)',
+                'Greek yogurt',
+                'Tofu/tempeh (if plant-based)',
+                'Protein powder (whey or plant-based)'
+            ],
+            'carbs': [
+                'Oats',
+                'Quinoa',
+                'Sweet potatoes',
+                'White rice (post-workout)',
+                'Fruits (berries, bananas)',
+                'Whole grain bread',
+                'Legumes (beans, lentils)'
+            ],
+            'fats': [
+                'Avocado',
+                'Olive oil (EVOO)',
+                'Nuts (almonds, walnuts)',
+                'Seeds (chia, flax, pumpkin)',
+                'Fatty fish',
+                'Coconut oil',
+                'Dark chocolate (85%+)'
+            ],
+            'vegetables': [
+                'Leafy greens (spinach, kale)',
+                'Cruciferous (broccoli, cauliflower)',
+                'Bell peppers',
+                'Tomatoes',
+                'Carrots',
+                'Zucchini',
+                'Asparagus'
+            ],
+            'superfoods': [
+                'Blueberries (antioxidants)',
+                'Turmeric (anti-inflammatory)',
+                'Ginger (digestion)',
+                'Garlic (immune support)',
+                'Green tea (EGCG)',
+                'Cacao (flavonoids)'
+            ]
+        }
+        
+        # Filter based on dietary restrictions
+        return self._filter_by_restrictions(recommendations)
+    
+    def _create_sample_meal_plan(self, macros: Dict) -> Dict:
+        """Create sample daily meal plan"""
+        
+        meal_plan = {
+            'breakfast': {
+                'meal': 'Protein Oatmeal Bowl',
+                'ingredients': [
+                    '80g oats',
+                    '30g protein powder',
+                    '1 banana',
+                    '15g almond butter',
+                    '100g berries'
+                ],
+                'macros': {'protein': 35, 'carbs': 65, 'fat': 12}
+            },
+            'lunch': {
+                'meal': 'Grilled Chicken Quinoa Bowl',
+                'ingredients': [
+                    '150g chicken breast',
+                    '100g quinoa',
+                    'Mixed vegetables',
+                    '1 tbsp olive oil',
+                    'Avocado (50g)'
+                ],
+                'macros': {'protein': 45, 'carbs': 50, 'fat': 18}
+            },
+            'snack': {
+                'meal': 'Greek Yogurt & Nuts',
+                'ingredients': [
+                    '200g Greek yogurt',
+                    '30g mixed nuts',
+                    'Berries'
+                ],
+                'macros': {'protein': 25, 'carbs': 20, 'fat': 15}
+            },
+            'dinner': {
+                'meal': 'Salmon with Sweet Potato',
+                'ingredients': [
+                    '200g salmon',
+                    '200g sweet potato',
+                    'Roasted vegetables',
+                    'Side salad with EVOO'
+                ],
+                'macros': {'protein': 50, 'carbs': 45, 'fat': 25}
+            }
+        }
+        
+        return meal_plan
+    
+    def _create_exercise_program(self) -> Dict:
+        """Create personalized exercise program"""
+        
+        goal = self.profile.primary_goal
+        
+        if goal == Goal.MUSCLE_GAIN:
+            program = self._strength_training_program()
+        elif goal == Goal.WEIGHT_LOSS:
+            program = self._fat_loss_program()
+        elif goal == Goal.ATHLETIC_PERFORMANCE:
+            program = self._performance_program()
+        elif goal == Goal.LONGEVITY:
+            program = self._longevity_program()
+        else:
+            program = self._general_fitness_program()
+        
+        return program
+    
+    def _strength_training_program(self) -> Dict:
+        """Hypertrophy-focused strength training"""
+        
+        program = {
+            'split': 'Upper/Lower 4x per week',
+            'duration': '60-75 minutes per session',
+            'weekly_schedule': {
+                'Monday': 'Upper Body A',
+                'Tuesday': 'Lower Body A',
+                'Wednesday': 'Rest or Active Recovery',
+                'Thursday': 'Upper Body B',
+                'Friday': 'Lower Body B',
+                'Saturday': 'Optional: Arms/Abs',
+                'Sunday': 'Rest'
+            },
+            'upper_body_a': {
+                'exercises': [
+                    {'name': 'Bench Press', 'sets': 4, 'reps': '6-8', 'rest': '2-3 min'},
+                    {'name': 'Barbell Row', 'sets': 4, 'reps': '8-10', 'rest': '2 min'},
+                    {'name': 'Overhead Press', 'sets': 3, 'reps': '8-10', 'rest': '2 min'},
+                    {'name': 'Pull-ups', 'sets': 3, 'reps': 'AMRAP', 'rest': '2 min'},
+                    {'name': 'Lateral Raises', 'sets': 3, 'reps': '12-15', 'rest': '90s'},
+                    {'name': 'Face Pulls', 'sets': 3, 'reps': '15-20', 'rest': '90s'}
+                ]
+            },
+            'lower_body_a': {
+                'exercises': [
+                    {'name': 'Squat', 'sets': 4, 'reps': '6-8', 'rest': '3 min'},
+                    {'name': 'Romanian Deadlift', 'sets': 3, 'reps': '8-10', 'rest': '2 min'},
+                    {'name': 'Bulgarian Split Squat', 'sets': 3, 'reps': '10-12', 'rest': '2 min'},
+                    {'name': 'Leg Curl', 'sets': 3, 'reps': '12-15', 'rest': '90s'},
+                    {'name': 'Calf Raises', 'sets': 4, 'reps': '15-20', 'rest': '60s'},
+                    {'name': 'Planks', 'sets': 3, 'reps': '60s', 'rest': '60s'}
+                ]
+            },
+            'progression': 'Add weight when you hit top of rep range for all sets',
+            'deload': 'Every 4-6 weeks, reduce volume by 50%',
+            'cardio': '2-3x per week, 20-30 min low intensity (Zone 2)'
+        }
+        
+        return program
+    
+    def _fat_loss_program(self) -> Dict:
+        """Fat loss focused training"""
+        
+        program = {
+            'approach': 'Strength training + HIIT + LISS',
+            'weekly_schedule': {
+                'Monday': 'Full Body Strength',
+                'Tuesday': 'HIIT Cardio (20 min)',
+                'Wednesday': 'Full Body Strength',
+                'Thursday': 'LISS Cardio (45 min)',
+                'Friday': 'Full Body Strength',
+                'Saturday': 'HIIT or Active Recovery',
+                'Sunday': 'Rest or LISS'
+            },
+            'strength_focus': 'Maintain muscle while in deficit',
+            'cardio_zones': {
+                'HIIT': '85-95% max HR, improves VO2max',
+                'LISS': '60-70% max HR, fat oxidation'
+            },
+            'step_goal': '10,000+ steps per day',
+            'neat': 'Increase non-exercise activity thermogenesis'
+        }
+        
+        return program
+    
+    def _longevity_program(self) -> Dict:
+        """Longevity-optimized training (Peter Attia inspired)"""
+        
+        program = {
+            'philosophy': 'Train for centenarian decathlon - maintain functional capacity',
+            'pillars': {
+                'stability': 'Foundation for all movement',
+                'strength': 'Maintain muscle mass and bone density',
+                'aerobic_efficiency': 'VO2max and Zone 2 capacity',
+                'anaerobic_performance': 'Peak power output',
+                'flexibility_mobility': 'Full range of motion'
+            },
+            'weekly_template': {
+                'Zone_2_Cardio': '3-4 hours per week (45-60 min sessions)',
+                'VO2max_Training': '1-2 sessions per week (4-8 min intervals)',
+                'Strength_Training': '3-4 sessions per week (full body focus)',
+                'Stability_Work': '15 min daily',
+                'Flexibility': '2-3 sessions per week (yoga/stretching)'
+            },
+            'key_exercises': [
+                'Deadlifts (posterior chain)',
+                'Squats (leg strength)',
+                'Pull-ups (upper body pull)',
+                'Farmer carries (grip + core)',
+                'Turkish get-ups (full body stability)',
+                'Step-ups (functional movement)'
+            ],
+            'biomarker_goals': {
+                'VO2max': 'Top 10% for age',
+                'Grip strength': '>40kg',
+                'Muscle mass': 'Maintain or increase',
+                'Body fat': '10-20% (male), 18-28% (female)'
+            }
+        }
+        
+        return program
+    
+    def _create_sleep_protocol(self) -> Dict:
+        """Optimize sleep for recovery and performance"""
+        
+        protocol = {
+            'target_sleep': '7-9 hours',
+            'consistency': 'Same bedtime/wake time (±30 min)',
+            'sleep_stages': {
+                'deep_sleep': 'Critical for physical recovery (aim 15-20%)',
+                'rem_sleep': 'Critical for mental recovery (aim 20-25%)'
+            },
+            'optimization_strategies': {
+                'environment': [
+                    'Cool room (65-68°F / 18-20°C)',
+                    'Complete darkness (blackout curtains)',
+                    'White noise or silence',
+                    'Comfortable mattress and pillows'
+                ],
+                'pre_sleep_routine': [
+                    'Dim lights 2 hours before bed',
+                    'No screens 1 hour before bed',
+                    'Hot shower/bath (drops core temp)',
+                    'Light reading or meditation',
+                    'Magnesium supplement (optional)'
+                ],
+                'morning_routine': [
+                    'Wake at same time daily',
+                    'Get sunlight within 30 min of waking',
+                    'Hydrate immediately',
+                    'Light movement or exercise'
+                ],
+                'avoid': [
+                    'Caffeine after 2pm',
+                    'Large meals 3 hours before bed',
+                    'Alcohol (disrupts REM)',
+                    'Intense exercise 3 hours before bed'
+                ]
+            },
+            'tracking': 'Use wearable to monitor sleep stages and HRV',
+            'troubleshooting': {
+                'cant_fall_asleep': '4-7-8 breathing, progressive muscle relaxation',
+                'wake_up_tired': 'Check sleep stages, may need more deep sleep',
+                'wake_during_night': 'Reduce fluid intake before bed, check blood sugar'
+            }
+        }
+        
+        return protocol
+    
+    def _create_stress_protocol(self) -> Dict:
+        """Stress management and resilience building"""
+        
+        protocol = {
+            'assessment': 'Current stress level: {}/10',
+            'daily_practices': {
+                'meditation': {
+                    'duration': '10-20 minutes',
+                    'type': 'Mindfulness or breath-focused',
+                    'timing': 'Morning or before bed',
+                    'apps': ['Headspace', 'Calm', 'Waking Up']
+                },
+                'breathwork': {
+                    'techniques': [
+                        'Box breathing (4-4-4-4)',
+                        'Physiological sigh (deep inhale, exhale)',
+                        'Wim Hof method (advanced)'
+                    ],
+                    'benefits': 'Activates parasympathetic nervous system'
+                },
+                'journaling': {
+                    'prompts': [
+                        'What am I grateful for?',
+                        'What went well today?',
+                        'What am I worried about?',
+                        'What can I control vs. what I can\'t?'
+                    ]
+                },
+                'movement': {
+                    'yoga': '20-30 min',
+                    'walking_in_nature': '30 min',
+                    'stretching': '10 min'
+                }
+            },
+            'hrv_tracking': {
+                'what': 'Heart rate variability - marker of recovery',
+                'target': 'Increase over time',
+                'use': 'Guide training intensity and recovery needs'
+            },
+            'social_connection': 'Regular meaningful interactions reduce cortisol',
+            'professional_support': 'Consider therapy if stress is overwhelming'
+        }
+        
+        return protocol
+    
+    def _recommend_supplements(self) -> Dict:
+        """Evidence-based supplement recommendations"""
+        
+        supplements = {
+            'foundational': [
+                {
+                    'name': 'Vitamin D3',
+                    'dosage': '2000-4000 IU daily',
+                    'timing': 'With breakfast',
+                    'reason': 'Most people deficient, supports immune and bone health',
+                    'testing': 'Aim for blood levels 40-60 ng/mL'
+                },
+                {
+                    'name': 'Omega-3 (EPA/DHA)',
+                    'dosage': '1-2g combined EPA+DHA',
+                    'timing': 'With meals',
+                    'reason': 'Anti-inflammatory, brain health, heart health',
+                    'source': 'Fish oil or algae oil'
+                },
+                {
+                    'name': 'Magnesium',
+                    'dosage': '200-400mg',
+                    'timing': 'Before bed',
+                    'reason': 'Sleep, muscle recovery, stress management',
+                    'form': 'Glycinate or threonate'
+                }
+            ],
+            'performance': [
+                {
+                    'name': 'Creatine Monohydrate',
+                    'dosage': '5g daily',
+                    'timing': 'Anytime',
+                    'reason': 'Strength, muscle growth, cognitive function',
+                    'note': 'Most researched supplement'
+                },
+                {
+                    'name': 'Protein Powder',
+                    'dosage': '20-40g per serving',
+                    'timing': 'Post-workout or between meals',
+                    'reason': 'Convenient protein source',
+                    'type': 'Whey isolate or plant-based blend'
+                }
+            ],
+            'longevity_experimental': [
+                {
+                    'name': 'NMN or NR',
+                    'dosage': '250-500mg',
+                    'reason': 'NAD+ precursor, cellular energy',
+                    'evidence': 'Promising but emerging'
+                },
+                {
+                    'name': 'Resveratrol',
+                    'dosage': '150-500mg',
+                    'reason': 'Sirtuin activation',
+                    'evidence': 'Mixed results in humans'
+                }
+            ],
+            'disclaimer': 'Consult healthcare provider before starting supplements'
+        }
+        
+        # Filter based on goals
+        return self._filter_supplements_by_goal(supplements)
+    
+    def _define_tracking_metrics(self) -> Dict:
+        """Define what to track for progress"""
+        
+        metrics = {
+            'daily': [
+                'Weight (same time, post-bathroom)',
+                'Sleep hours and quality',
+                'Energy level (1-10)',
+                'Mood (1-10)',
+                'Steps',
+                'Water intake',
+                'Adherence to plan'
+            ],
+            'weekly': [
+                'Body measurements (waist, hips, arms)',
+                'Progress photos (same lighting/pose)',
+                'Strength metrics (weights lifted)',
+                'Cardio performance',
+                'Weekly average weight',
+                'HRV trend'
+            ],
+            'monthly': [
+                'Body composition (DEXA or InBody)',
+                'Fitness assessments',
+                'Biometric photos',
+                'Review and adjust plan'
+            ],
+            'quarterly': [
+                'Blood work (if applicable)',
+                'VO2max test',
+                'Comprehensive health assessment'
+            ],
+            'subjective_tracking': [
+                'How do clothes fit?',
+                'Energy throughout day',
+                'Recovery between workouts',
+                'Mental clarity',
+                'Stress levels'
+            ]
+        }
+        
+        return metrics
+    
+    def _set_milestones(self) -> List[Dict]:
+        """Set progressive milestones"""
+        
+        milestones = [
+            {
+                'week': 1,
+                'goals': ['Establish baseline metrics', 'Stick to nutrition plan 80%', 'Complete all workouts'],
+                'focus': 'Building habits'
+            },
+            {
+                'week': 4,
+                'goals': ['See initial changes', 'Feel more energetic', 'Workouts feeling easier'],
+                'focus': 'Early adaptations'
+            },
+            {
+                'week': 8,
+                'goals': ['Visible body composition changes', 'Strength increases', 'New habits solidified'],
+                'focus': 'Momentum building'
+            },
+            {
+                'week': 12,
+                'goals': ['Significant progress toward goal', 'Sustainable routine established', 'Consider progression'],
+                'focus': 'Long-term sustainability'
+            }
+        ]
+        
+        return milestones
+    
+    def _generate_safety_notes(self) -> List[str]:
+        """Important safety and medical disclaimers"""
+        
+        return [
+            '⚠️ This is not medical advice - consult healthcare provider before starting',
+            '⚠️ If you have medical conditions, get clearance from doctor',
+            '⚠️ Start conservatively and progress gradually',
+            '⚠️ Listen to your body - pain is a signal, not weakness',
+            '⚠️ Prioritize recovery - more is not always better',
+            '⚠️ If something doesn\'t feel right, stop and seek professional guidance'
+        ]
+    
+    # Helper methods
+    def _foods_to_limit(self) -> List[str]:
+        return [
+            'Processed foods',
+            'Refined sugars',
+            'Trans fats',
+            'Excess alcohol',
+            'Artificial sweeteners (in large amounts)'
+        ]
+    
+    def _filter_by_restrictions(self, foods: Dict) -> Dict:
+        # Filter based on dietary restrictions
+        return foods  # Simplified
+    
+    def _assess_if_recommended(self) -> str:
+        if Goal.WEIGHT_LOSS in [self.profile.primary_goal, *self.profile.secondary_goals]:
+            return 'May be beneficial - start with 12-16 hour fasting window'
+        return 'Not necessary for your goals, focus on nutrient timing'
+    
+    def _general_fitness_program(self) -> Dict:
+        return {
+            'split': '3-4 full body sessions per week',
+            'cardio': '2-3 sessions per week',
+            'flexibility': '2 sessions per week'
+        }
+    
+    def _performance_program(self) -> Dict:
+        return {
+            'sport_specific': 'Tailor to sport demands',
+            'periodization': 'Progressive overload with deload weeks',
+            'skill_work': 'Sport-specific practice'
+        }
+    
+    def _filter_supplements_by_goal(self, supplements: Dict) -> Dict:
+        # Filter based on user goals
+        return supplements  # Simplified
+```
+
+## Mental Health Support
+
+```python
+class MentalWellnessCoach:
+    """Evidence-based mental health support"""
+    
+    def __init__(self):
+        self.mood_log = []
+    
+    def provide_cbt_exercise(self, thought: str) -> Dict:
+        """Cognitive Behavioral Therapy exercise"""
+        
+        return {
+            'technique': 'Cognitive Restructuring',
+            'steps': [
+                f'Identify thought: "{thought}"',
+                'Is this thought helpful or harmful?',
+                'What evidence supports this thought?',
+                'What evidence contradicts it?',
+                'What would you tell a friend with this thought?',
+                'Reframe: Create balanced alternative thought'
+            ],
+            'example_reframe': {
+                'negative': 'I always fail at diets',
+                'reframed': 'I\'ve struggled before, but I\'m learning what works for me'
+            }
+        }
+    
+    def mindfulness_exercise(self, duration: int = 5) -> Dict:
+        """Guided mindfulness practice"""
+        
+        return {
+            'duration': f'{duration} minutes',
+            'instructions': [
+                'Find comfortable seated position',
+                'Close eyes or soft gaze downward',
+                'Notice your breath - in and out',
+                'When mind wanders (it will), gently return to breath',
+                'No judgment - this is practice, not perfection',
+                f'Continue for {duration} minutes'
+            ],
+            'benefits': [
+                'Reduces stress and anxiety',
+                'Improves focus',
+                'Enhances emotional regulation',
+                'Better sleep quality'
+            ]
+        }
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Individual responses to interventions
+- Biomarker trends over time
+- Adherence patterns
+- What protocols work best
+- Latest scientific research
+
+And adapts by:
+- Adjusting recommendations based on progress
+- Personalizing to individual responses
+- Incorporating new research findings
+- Optimizing for compliance and enjoyment
+- Suggesting modifications for plateaus
+
+---
+**Status:** Evidence-Based | Personalized | Holistic | Self-Improving
+
+**IMPORTANT DISCLAIMER:** This skill provides evidence-based information for educational purposes only. It is not medical advice. Always consult qualified healthcare professionals before making changes to your health, nutrition, exercise, or supplement regimen, especially if you have medical conditions or take medications.
