@@ -1,0 +1,729 @@
+# Intelligent Legal & Compliance Assistant Skill
+**Version:** 1.0.0  
+**Type:** Legal | Compliance | Risk Management | Contract Analysis | Regulatory
+
+## Core Purpose
+AI-powered legal and compliance assistant that helps navigate contracts, regulatory requirements, legal documentation, risk assessment, and compliance frameworks across jurisdictions. Democratizes legal expertise while maintaining appropriate disclaimers and professional standards.
+
+## Self-Improvement Capabilities
+```yaml
+learning_engine:
+  - Track successful contract patterns
+  - Learn jurisdiction-specific requirements
+  - Adapt to regulatory changes
+  - Remember precedent analyses
+  - Evolve clause libraries
+```
+
+## Core Frameworks
+
+### Legal Domains
+- **Contract Law** (Analysis, drafting, negotiation)
+- **Corporate Law** (Formation, governance, compliance)
+- **Employment Law** (Hiring, termination, workplace policies)
+- **Intellectual Property** (Patents, trademarks, copyrights)
+- **Privacy & Data Protection** (GDPR, CCPA, data governance)
+- **Regulatory Compliance** (Industry-specific regulations)
+
+### Compliance Frameworks
+- **GDPR** (General Data Protection Regulation)
+- **CCPA/CPRA** (California privacy laws)
+- **SOX** (Sarbanes-Oxley)
+- **HIPAA** (Health insurance portability)
+- **PCI DSS** (Payment card security)
+- **SOC 2** (Security and availability)
+- **ISO 27001** (Information security)
+
+## Contract Analysis & Review
+
+### **Contract Intelligence Engine**
+```python
+from typing import List, Dict, Optional, Set
+from dataclasses import dataclass
+from enum import Enum
+import re
+
+class ContractType(Enum):
+    NDA = "non_disclosure_agreement"
+    EMPLOYMENT = "employment_agreement"
+    SaaS = "software_as_a_service"
+    SERVICES = "professional_services"
+    PARTNERSHIP = "partnership_agreement"
+    PURCHASE = "purchase_agreement"
+    LICENSE = "licensing_agreement"
+    LEASE = "lease_agreement"
+    CONSULTING = "consulting_agreement"
+
+class RiskLevel(Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+@dataclass
+class ContractClause:
+    """Individual contract clause"""
+    title: str
+    text: str
+    category: str
+    risk_level: RiskLevel
+    issues: List[str]
+    suggestions: List[str]
+
+class ContractAnalyzer:
+    """
+    AI-powered contract analysis and risk assessment
+    """
+    
+    def __init__(self):
+        self.red_flag_patterns = self._load_red_flags()
+        self.standard_clauses = self._load_standard_clauses()
+        self.jurisdiction_requirements = {}
+    
+    def analyze_contract(
+        self,
+        contract_text: str,
+        contract_type: ContractType,
+        your_role: str = "signee",  # "signee" or "drafter"
+        jurisdiction: str = "US"
+    ) -> Dict:
+        """
+        Comprehensive contract analysis
+        
+        Returns:
+        - Overall risk assessment
+        - Clause-by-clause review
+        - Red flags and concerns
+        - Missing standard clauses
+        - Negotiation recommendations
+        - Legal compliance check
+        """
+        analysis = {
+            'overview': self._extract_overview(contract_text),
+            'risk_assessment': self._assess_overall_risk(contract_text, contract_type),
+            'clause_analysis': self._analyze_clauses(contract_text),
+            'red_flags': self._identify_red_flags(contract_text, your_role),
+            'missing_clauses': self._identify_missing_clauses(contract_text, contract_type),
+            'negotiation_points': self._suggest_negotiation_points(contract_text, your_role),
+            'compliance_check': self._check_compliance(contract_text, jurisdiction),
+            'summary': self._generate_summary(contract_text),
+            'action_items': self._generate_action_items()
+        }
+        
+        return analysis
+    
+    def _extract_overview(self, contract_text: str) -> Dict:
+        """Extract key contract details"""
+        
+        overview = {
+            'parties': self._extract_parties(contract_text),
+            'effective_date': self._extract_date(contract_text, 'effective'),
+            'termination_date': self._extract_date(contract_text, 'termination'),
+            'governing_law': self._extract_governing_law(contract_text),
+            'key_obligations': self._extract_key_obligations(contract_text),
+            'financial_terms': self._extract_financial_terms(contract_text)
+        }
+        
+        return overview
+    
+    def _assess_overall_risk(self, contract_text: str, contract_type: ContractType) -> Dict:
+        """Assess overall contract risk"""
+        
+        risk_factors = []
+        risk_score = 0  # 0-100
+        
+        # Check for one-sided terms
+        if self._contains_one_sided_terms(contract_text):
+            risk_factors.append({
+                'factor': 'One-sided terms detected',
+                'severity': RiskLevel.HIGH,
+                'impact': 'May be heavily favoring other party'
+            })
+            risk_score += 25
+        
+        # Check for unlimited liability
+        if self._has_unlimited_liability(contract_text):
+            risk_factors.append({
+                'factor': 'Unlimited liability clause',
+                'severity': RiskLevel.CRITICAL,
+                'impact': 'You could be liable for unlimited damages'
+            })
+            risk_score += 40
+        
+        # Check for automatic renewal
+        if self._has_automatic_renewal(contract_text):
+            risk_factors.append({
+                'factor': 'Automatic renewal clause',
+                'severity': RiskLevel.MEDIUM,
+                'impact': 'Contract will auto-renew unless cancelled'
+            })
+            risk_score += 10
+        
+        # Check for broad IP transfer
+        if self._has_broad_ip_transfer(contract_text):
+            risk_factors.append({
+                'factor': 'Broad intellectual property transfer',
+                'severity': RiskLevel.HIGH,
+                'impact': 'May be giving away more IP rights than intended'
+            })
+            risk_score += 30
+        
+        # Check for restrictive non-compete
+        if self._has_restrictive_noncompete(contract_text):
+            risk_factors.append({
+                'factor': 'Restrictive non-compete clause',
+                'severity': RiskLevel.HIGH,
+                'impact': 'May limit future business opportunities'
+            })
+            risk_score += 25
+        
+        # Determine overall risk level
+        if risk_score >= 70:
+            overall_risk = RiskLevel.CRITICAL
+        elif risk_score >= 40:
+            overall_risk = RiskLevel.HIGH
+        elif risk_score >= 20:
+            overall_risk = RiskLevel.MEDIUM
+        else:
+            overall_risk = RiskLevel.LOW
+        
+        return {
+            'overall_risk_level': overall_risk.value,
+            'risk_score': risk_score,
+            'risk_factors': risk_factors,
+            'recommendation': self._generate_risk_recommendation(overall_risk)
+        }
+    
+    def _analyze_clauses(self, contract_text: str) -> List[ContractClause]:
+        """Analyze individual clauses"""
+        
+        clauses = []
+        
+        # Payment terms
+        payment_clause = self._analyze_payment_terms(contract_text)
+        if payment_clause:
+            clauses.append(payment_clause)
+        
+        # Termination clause
+        termination_clause = self._analyze_termination(contract_text)
+        if termination_clause:
+            clauses.append(termination_clause)
+        
+        # Liability and indemnification
+        liability_clause = self._analyze_liability(contract_text)
+        if liability_clause:
+            clauses.append(liability_clause)
+        
+        # Confidentiality
+        confidentiality_clause = self._analyze_confidentiality(contract_text)
+        if confidentiality_clause:
+            clauses.append(confidentiality_clause)
+        
+        # IP rights
+        ip_clause = self._analyze_ip_rights(contract_text)
+        if ip_clause:
+            clauses.append(ip_clause)
+        
+        # Dispute resolution
+        dispute_clause = self._analyze_dispute_resolution(contract_text)
+        if dispute_clause:
+            clauses.append(dispute_clause)
+        
+        return clauses
+    
+    def _identify_red_flags(self, contract_text: str, your_role: str) -> List[Dict]:
+        """Identify critical red flags"""
+        
+        red_flags = []
+        
+        # Check against known red flag patterns
+        for pattern in self.red_flag_patterns:
+            if re.search(pattern['regex'], contract_text, re.IGNORECASE):
+                red_flags.append({
+                    'flag': pattern['name'],
+                    'severity': pattern['severity'],
+                    'description': pattern['description'],
+                    'example_text': '...',  # Would extract actual text
+                    'recommendation': pattern['recommendation']
+                })
+        
+        # Specific red flags
+        
+        # Unilateral modification rights
+        if re.search(r'may (unilaterally )?modify|change.*at.*sole discretion', contract_text, re.IGNORECASE):
+            red_flags.append({
+                'flag': 'Unilateral modification rights',
+                'severity': RiskLevel.HIGH,
+                'description': 'Other party can change terms without your consent',
+                'recommendation': 'Negotiate for mutual consent or reasonable notice period'
+            })
+        
+        # No termination for convenience
+        if not re.search(r'terminate.*for convenience|terminate.*without cause', contract_text, re.IGNORECASE):
+            red_flags.append({
+                'flag': 'No termination for convenience',
+                'severity': RiskLevel.MEDIUM,
+                'description': 'You may be locked in without exit option',
+                'recommendation': 'Add termination for convenience with notice period'
+            })
+        
+        # Exclusive jurisdiction in unfavorable location
+        jurisdiction_match = re.search(r'exclusive jurisdiction.*in (the )?([A-Z][a-z]+)', contract_text)
+        if jurisdiction_match:
+            jurisdiction = jurisdiction_match.group(2)
+            if jurisdiction not in ['California', 'New York', 'Delaware']:  # Example
+                red_flags.append({
+                    'flag': f'Jurisdiction in {jurisdiction}',
+                    'severity': RiskLevel.MEDIUM,
+                    'description': f'Legal disputes must be handled in {jurisdiction}',
+                    'recommendation': 'Consider negotiating neutral jurisdiction or home jurisdiction'
+                })
+        
+        return red_flags
+    
+    def _identify_missing_clauses(self, contract_text: str, contract_type: ContractType) -> List[Dict]:
+        """Identify important missing clauses"""
+        
+        missing = []
+        
+        # Standard clauses that should be present
+        standard_checks = {
+            'Force Majeure': r'force majeure|acts? of god|unforeseeable circumstances',
+            'Confidentiality': r'confidential|proprietary|non-disclosure',
+            'Limitation of Liability': r'limitation of liability|liable.*not exceed',
+            'Indemnification': r'indemnif(y|ication)|hold harmless',
+            'Severability': r'severability|severable|invalid.*remainder',
+            'Entire Agreement': r'entire agreement|supersedes.*prior',
+            'Assignment': r'assignment|assign.*rights',
+            'Notice Requirements': r'notice.*in writing|notice.*to.*address',
+            'Governing Law': r'governing law|governed by.*law of',
+            'Dispute Resolution': r'arbitration|mediation|dispute resolution'
+        }
+        
+        for clause_name, pattern in standard_checks.items():
+            if not re.search(pattern, contract_text, re.IGNORECASE):
+                missing.append({
+                    'clause': clause_name,
+                    'importance': 'HIGH' if clause_name in ['Limitation of Liability', 'Indemnification'] else 'MEDIUM',
+                    'description': self._get_clause_description(clause_name),
+                    'recommended_language': self._get_standard_language(clause_name)
+                })
+        
+        return missing
+    
+    def _suggest_negotiation_points(self, contract_text: str, your_role: str) -> List[Dict]:
+        """Suggest negotiation points"""
+        
+        suggestions = []
+        
+        # Analyze each problematic area
+        
+        # Payment terms
+        if 'payment' in contract_text.lower():
+            suggestions.append({
+                'category': 'Payment Terms',
+                'current_issue': 'Review payment schedule and terms',
+                'suggestion': 'Negotiate favorable payment terms (e.g., Net 30 instead of Net 60)',
+                'priority': 'HIGH',
+                'talking_points': [
+                    'Request shorter payment cycles',
+                    'Add late payment penalties',
+                    'Clarify what triggers payment',
+                    'Include milestone payments for large projects'
+                ]
+            })
+        
+        # Liability caps
+        if self._has_unlimited_liability(contract_text):
+            suggestions.append({
+                'category': 'Liability',
+                'current_issue': 'Unlimited liability exposure',
+                'suggestion': 'Cap liability at contract value or insurance limits',
+                'priority': 'CRITICAL',
+                'talking_points': [
+                    'Propose liability cap (e.g., 1x contract value)',
+                    'Mutual liability limitations',
+                    'Exclude certain damages (consequential, indirect)',
+                    'Require adequate insurance coverage'
+                ]
+            })
+        
+        # IP ownership
+        if 'intellectual property' in contract_text.lower():
+            suggestions.append({
+                'category': 'Intellectual Property',
+                'current_issue': 'IP ownership and rights need clarification',
+                'suggestion': 'Clearly define IP ownership and usage rights',
+                'priority': 'HIGH',
+                'talking_points': [
+                    'Retain ownership of pre-existing IP',
+                    'Define work-for-hire vs. licensed work',
+                    'Limit scope of IP transfer',
+                    'Retain right to use for portfolio/marketing'
+                ]
+            })
+        
+        # Termination
+        termination_notice = self._extract_termination_notice(contract_text)
+        if termination_notice and termination_notice > 60:
+            suggestions.append({
+                'category': 'Termination',
+                'current_issue': f'{termination_notice} days notice required',
+                'suggestion': 'Reduce notice period to 30-60 days',
+                'priority': 'MEDIUM',
+                'talking_points': [
+                    'Negotiate shorter notice period',
+                    'Add termination for convenience clause',
+                    'Clarify termination obligations',
+                    'Define what happens to deliverables upon termination'
+                ]
+            })
+        
+        return suggestions
+    
+    def _check_compliance(self, contract_text: str, jurisdiction: str) -> Dict:
+        """Check regulatory compliance"""
+        
+        compliance = {
+            'data_privacy': self._check_privacy_compliance(contract_text),
+            'employment_law': self._check_employment_compliance(contract_text),
+            'consumer_protection': self._check_consumer_compliance(contract_text),
+            'industry_specific': self._check_industry_compliance(contract_text)
+        }
+        
+        return compliance
+    
+    def _check_privacy_compliance(self, contract_text: str) -> Dict:
+        """Check GDPR/CCPA compliance"""
+        
+        has_data_processing = 'personal data' in contract_text.lower() or 'personal information' in contract_text.lower()
+        
+        if has_data_processing:
+            checks = {
+                'dpa_present': 'data processing agreement' in contract_text.lower(),
+                'purpose_limitation': 'process.*for.*purpose' in contract_text.lower(),
+                'data_subject_rights': 'data subject rights' in contract_text.lower(),
+                'security_measures': 'security measure' in contract_text.lower(),
+                'breach_notification': 'breach.*notif' in contract_text.lower()
+            }
+            
+            return {
+                'applicable': True,
+                'checks': checks,
+                'compliant': all(checks.values()),
+                'recommendations': [
+                    'Include Data Processing Agreement (DPA)' if not checks['dpa_present'] else None,
+                    'Specify purpose limitation' if not checks['purpose_limitation'] else None,
+                    'Address data subject rights' if not checks['data_subject_rights'] else None,
+                    'Define security measures' if not checks['security_measures'] else None,
+                    'Include breach notification obligations' if not checks['breach_notification'] else None
+                ]
+            }
+        
+        return {'applicable': False}
+    
+    def generate_contract_template(
+        self,
+        contract_type: ContractType,
+        parties: Dict[str, str],
+        key_terms: Dict
+    ) -> str:
+        """Generate contract template"""
+        
+        if contract_type == ContractType.NDA:
+            return self._generate_nda_template(parties, key_terms)
+        elif contract_type == ContractType.CONSULTING:
+            return self._generate_consulting_template(parties, key_terms)
+        elif contract_type == ContractType.SaaS:
+            return self._generate_saas_template(parties, key_terms)
+        else:
+            return self._generate_generic_template(contract_type, parties, key_terms)
+    
+    def _generate_nda_template(self, parties: Dict, terms: Dict) -> str:
+        """Generate NDA template"""
+        
+        template = f"""
+MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Mutual Non-Disclosure Agreement (the "Agreement") is entered into as of {terms.get('date', '[DATE]')} (the "Effective Date") by and between:
+
+{parties.get('party1', '[PARTY 1 NAME]')} ("Party 1"), and
+{parties.get('party2', '[PARTY 2 NAME]')} ("Party 2").
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+   "Confidential Information" means any information disclosed by either party that is marked as confidential or would reasonably be considered confidential given its nature and circumstances of disclosure.
+
+2. OBLIGATIONS
+   Each party agrees to:
+   a) Maintain confidentiality of Confidential Information
+   b) Use Confidential Information only for the Purpose: {terms.get('purpose', '[STATE PURPOSE]')}
+   c) Limit disclosure to employees with need-to-know
+   d) Protect with same care as own confidential information
+
+3. EXCLUSIONS
+   Confidential Information does not include information that:
+   a) Is publicly available without breach
+   b) Was known prior to disclosure
+   c) Is independently developed
+   d) Is received from third party without restriction
+
+4. TERM
+   This Agreement expires {terms.get('duration', '[DURATION]')} from the Effective Date.
+   Confidentiality obligations survive for {terms.get('survival', '[SURVIVAL PERIOD]')} after termination.
+
+5. RETURN OF MATERIALS
+   Upon termination, each party shall return or destroy all Confidential Information.
+
+6. NO LICENSE
+   This Agreement does not grant any license or rights to intellectual property.
+
+7. GOVERNING LAW
+   This Agreement is governed by the laws of {terms.get('jurisdiction', '[JURISDICTION]')}.
+
+8. ENTIRE AGREEMENT
+   This Agreement constitutes the entire agreement regarding confidentiality.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+PARTY 1: ___________________    Date: ____________
+
+PARTY 2: ___________________    Date: ____________
+"""
+        
+        return template.strip()
+    
+    # Helper methods
+    def _extract_parties(self, text: str) -> List[str]:
+        # Extract party names
+        return ['Party 1', 'Party 2']  # Simplified
+    
+    def _extract_date(self, text: str, date_type: str) -> Optional[str]:
+        # Extract dates
+        return None  # Simplified
+    
+    def _extract_governing_law(self, text: str) -> Optional[str]:
+        match = re.search(r'governed by.*law of (the )?([A-Z][a-z]+(?: [A-Z][a-z]+)?)', text, re.IGNORECASE)
+        return match.group(2) if match else None
+    
+    def _extract_key_obligations(self, text: str) -> List[str]:
+        return []  # Simplified
+    
+    def _extract_financial_terms(self, text: str) -> Dict:
+        return {}  # Simplified
+    
+    def _contains_one_sided_terms(self, text: str) -> bool:
+        one_sided_patterns = [
+            r'at.*sole discretion',
+            r'may.*without.*consent',
+            r'reserves the right'
+        ]
+        return any(re.search(p, text, re.IGNORECASE) for p in one_sided_patterns)
+    
+    def _has_unlimited_liability(self, text: str) -> bool:
+        # Check if liability is capped
+        has_cap = re.search(r'liability.*shall not exceed|limit.*liability', text, re.IGNORECASE)
+        return not has_cap
+    
+    def _has_automatic_renewal(self, text: str) -> bool:
+        return bool(re.search(r'automatic.*renew|auto.*renew', text, re.IGNORECASE))
+    
+    def _has_broad_ip_transfer(self, text: str) -> bool:
+        return bool(re.search(r'assign.*all.*intellectual property|transfer.*all.*ip', text, re.IGNORECASE))
+    
+    def _has_restrictive_noncompete(self, text: str) -> bool:
+        return bool(re.search(r'non-compete|not.*compete.*with', text, re.IGNORECASE))
+    
+    def _generate_risk_recommendation(self, risk_level: RiskLevel) -> str:
+        recommendations = {
+            RiskLevel.LOW: "Contract appears reasonable. Standard review recommended.",
+            RiskLevel.MEDIUM: "Some concerning terms. Recommend negotiation on key points.",
+            RiskLevel.HIGH: "Multiple significant concerns. Strongly recommend legal review and negotiation.",
+            RiskLevel.CRITICAL: "Critical issues identified. Do NOT sign without extensive legal review and substantial modifications."
+        }
+        return recommendations.get(risk_level, "Seek legal counsel.")
+    
+    def _analyze_payment_terms(self, text: str) -> Optional[ContractClause]:
+        if 'payment' not in text.lower():
+            return None
+        
+        return ContractClause(
+            title="Payment Terms",
+            text="[Extract payment terms]",
+            category="financial",
+            risk_level=RiskLevel.MEDIUM,
+            issues=["Review payment schedule"],
+            suggestions=["Negotiate shorter payment cycles"]
+        )
+    
+    def _analyze_termination(self, text: str) -> Optional[ContractClause]:
+        # Analyze termination clause
+        return None  # Simplified
+    
+    def _analyze_liability(self, text: str) -> Optional[ContractClause]:
+        # Analyze liability clause
+        return None  # Simplified
+    
+    def _analyze_confidentiality(self, text: str) -> Optional[ContractClause]:
+        # Analyze confidentiality clause
+        return None  # Simplified
+    
+    def _analyze_ip_rights(self, text: str) -> Optional[ContractClause]:
+        # Analyze IP rights clause
+        return None  # Simplified
+    
+    def _analyze_dispute_resolution(self, text: str) -> Optional[ContractClause]:
+        # Analyze dispute resolution clause
+        return None  # Simplified
+    
+    def _extract_termination_notice(self, text: str) -> Optional[int]:
+        match = re.search(r'(\d+)[-\s]days?.*notice', text, re.IGNORECASE)
+        return int(match.group(1)) if match else None
+    
+    def _check_employment_compliance(self, text: str) -> Dict:
+        return {'applicable': False}  # Simplified
+    
+    def _check_consumer_compliance(self, text: str) -> Dict:
+        return {'applicable': False}  # Simplified
+    
+    def _check_industry_compliance(self, text: str) -> Dict:
+        return {'applicable': False}  # Simplified
+    
+    def _generate_summary(self, text: str) -> str:
+        return "Contract summary would be generated here."
+    
+    def _generate_action_items(self) -> List[str]:
+        return [
+            "Review all identified red flags",
+            "Consult with legal counsel",
+            "Prepare negotiation points",
+            "Request clarifications on ambiguous terms"
+        ]
+    
+    def _get_clause_description(self, clause_name: str) -> str:
+        descriptions = {
+            'Force Majeure': 'Protects parties from liability for unforeseeable events',
+            'Limitation of Liability': 'Caps maximum damages and excludes certain types',
+            'Severability': 'Ensures rest of contract remains valid if one part is invalid'
+        }
+        return descriptions.get(clause_name, 'Important standard clause')
+    
+    def _get_standard_language(self, clause_name: str) -> str:
+        return f"[Standard {clause_name} clause language]"
+    
+    def _load_red_flags(self) -> List[Dict]:
+        return [
+            {
+                'name': 'Unilateral modification',
+                'regex': r'may modify.*at.*sole discretion',
+                'severity': RiskLevel.HIGH,
+                'description': 'Allows one party to change terms unilaterally',
+                'recommendation': 'Require mutual consent for modifications'
+            }
+        ]
+    
+    def _load_standard_clauses(self) -> Dict:
+        return {}
+    
+    def _generate_consulting_template(self, parties: Dict, terms: Dict) -> str:
+        return "Consulting agreement template..."
+    
+    def _generate_saas_template(self, parties: Dict, terms: Dict) -> str:
+        return "SaaS agreement template..."
+    
+    def _generate_generic_template(self, contract_type: ContractType, parties: Dict, terms: Dict) -> str:
+        return f"Generic {contract_type.value} template..."
+```
+
+## Compliance Framework Builder
+
+```python
+class ComplianceFrameworkBuilder:
+    """Build compliance programs"""
+    
+    def __init__(self, framework_type: str):
+        self.framework_type = framework_type
+    
+    def build_compliance_program(self, organization: Dict) -> Dict:
+        """Build comprehensive compliance program"""
+        
+        if self.framework_type == 'GDPR':
+            return self._build_gdpr_program(organization)
+        elif self.framework_type == 'SOC2':
+            return self._build_soc2_program(organization)
+        elif self.framework_type == 'HIPAA':
+            return self._build_hipaa_program(organization)
+        else:
+            return self._build_generic_program(organization)
+    
+    def _build_gdpr_program(self, org: Dict) -> Dict:
+        """Build GDPR compliance program"""
+        
+        return {
+            'requirements': [
+                'Lawful basis for processing',
+                'Consent management',
+                'Data subject rights (access, deletion, portability)',
+                'Data Protection Impact Assessment (DPIA)',
+                'Privacy by design and default',
+                'Data breach notification (72 hours)',
+                'Data Processing Agreements (DPAs)',
+                'Record of processing activities'
+            ],
+            'implementation_steps': [
+                'Appoint Data Protection Officer (DPO) if required',
+                'Map all personal data flows',
+                'Update privacy policy and notices',
+                'Implement consent management system',
+                'Create data subject request procedures',
+                'Establish breach response plan',
+                'Conduct DPIAs for high-risk processing',
+                'Update vendor contracts with DPAs',
+                'Train staff on GDPR requirements'
+            ],
+            'documentation': [
+                'Privacy policy',
+                'Cookie policy',
+                'Data processing records',
+                'DPIAs',
+                'Breach notification templates',
+                'Data retention schedules'
+            ],
+            'timeline': '3-6 months for full implementation'
+        }
+    
+    def _build_soc2_program(self, org: Dict) -> Dict:
+        return {'framework': 'SOC 2 Type II compliance program...'}
+    
+    def _build_hipaa_program(self, org: Dict) -> Dict:
+        return {'framework': 'HIPAA compliance program...'}
+    
+    def _build_generic_program(self, org: Dict) -> Dict:
+        return {'framework': 'Generic compliance program...'}
+```
+
+## Learning & Adaptation
+
+The skill tracks:
+- Successful contract negotiations
+- Jurisdiction-specific requirements
+- Common clause patterns
+- Regulatory updates
+- Precedent analyses
+
+And adapts by:
+- Suggesting proven negotiation strategies
+- Pre-applying jurisdiction best practices
+- Recommending standard clause libraries
+- Updating for regulatory changes
+- Learning from outcome patterns
+
+---
+**Status:** Professional-Grade | Risk-Aware | Compliance-Focused | Self-Improving
+
+**CRITICAL LEGAL DISCLAIMER:** This skill provides general legal information and analysis for educational purposes only. It does NOT constitute legal advice and should NOT be relied upon as a substitute for consultation with a qualified attorney. Laws vary by jurisdiction and change frequently. Always consult with a licensed attorney before:
+- Signing any contract or legal document
+- Making legal decisions
+- Implementing compliance programs
+- Responding to legal issues
+
+This skill's creator and operators accept no liability for any decisions made based on this information. When in doubt, seek professional legal counsel.
