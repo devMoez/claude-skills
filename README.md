@@ -3,7 +3,7 @@
 > A comprehensive collection of production-ready, self-improving AI skills for full-stack development, security auditing, and system architecture.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/devMoez/claude-skills)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/devMoez/claude-skills)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 ---
@@ -23,35 +23,52 @@ Each skill is:
 ## 📦 Available Skills
 
 ### 🎨 Frontend Development
-- **[Frontend Framework Master](./frontend-framework-master.skill)** - React, Vue, Svelte with advanced hooks, state management, and performance optimization
-- **[UI Mastery](./ui-mastery.skill)** - Modern UI/UX implementation with accessibility and responsive design
+- **[Frontend Framework Master](./Frontend%20Framework%20Master.skill)** - React, Vue, Svelte with advanced hooks, state management, and performance optimization
+- **[UI Mastery](./UI%20Mastery.skill)** - Modern UI/UX implementation with accessibility and responsive design
 
 ### ⚡ Backend Development
-- **[Backend API Master](./backend-api-master.skill)** - REST, GraphQL, WebSocket APIs with Express, FastAPI, and NestJS
-- **[Authentication & Security](./authentication-security-master.skill)** - OAuth, JWT, session management, and security best practices
+- **[Backend API Master](./Backend%20API%20Master.skill)** - REST, GraphQL, WebSocket APIs with Express, FastAPI, and NestJS
+- **[Authentication & Security](./Authentication%20&%20Security%20Master.skill)** - OAuth, JWT, session management, and security best practices
 
 ### 🗄️ Database & Data
-- **[Database Architect](./database-architect.skill)** - SQL/NoSQL design, optimization, migrations with Prisma, TypeORM, Mongoose
-- **[Data Science & ML](./data-science-ml.skill)** - Data analysis, machine learning, and AI model integration
+- **[Database Architect](./Database%20Architect.skill)** - SQL/NoSQL design, optimization, migrations with Prisma, TypeORM, Mongoose
+- **[Data Science & Machine Learning](./Data%20Science%20&%20Machine%20Learning.skill)** - Data analysis, machine learning, and AI model integration
+- **[Synthetic Data Architect](./Synthetic%20Data%20Architect.skill)** - Privacy-preserving data augmentation with GANs and Differential Privacy
 
 ### 🏗️ Architecture & Infrastructure
-- **[Microservices Architect](./microservices-architect.skill)** - Distributed systems, service mesh, event-driven architecture, SAGA pattern
-- **[API Gateway & Service Mesh](./api-gateway-service-mesh.skill)** - Kong, Istio, traffic management, rate limiting, circuit breakers
-- **[DevOps & Infrastructure](./devops-infrastructure.skill)** - CI/CD, Docker, Kubernetes, monitoring, and deployment automation
+- **[Microservices Architect](./Microservices%20Architect.skill)** - Distributed systems, service mesh, event-driven architecture, SAGA pattern
+- **[API Gateway & Service Mesh](./API%20Gateway%20&%20Service%20Mesh.skill)** - Kong, Istio, traffic management, rate limiting, circuit breakers
+- **[DevOps & Infrastructure](./DevOps%20&%20Infrastructure.skill)** - CI/CD, Docker, Kubernetes, monitoring, and deployment automation
+- **[Cloud Native & Kubernetes](./Cloud%20Native%20&%20Kubernetes.skill)** - Advanced cloud orchestration and container management
 
 ### 🤖 AI & Intelligent Systems
-- **[AI Agent Orchestrator](./ai-agent-orchestrator.skill)** - Multi-agent systems with LangGraph, AutoGen, CrewAI, autonomous workflows ([📖 Docs](./docs/ai-agent-orchestrator-README.md))
+- **[AI Agent Orchestrator](./AI%20Agent%20Orchestrator.skill)** - Multi-agent systems with LangGraph, AutoGen, CrewAI, autonomous workflows ([📖 Docs](./docs/ai-agent-orchestrator-README.md))
+- **[Prompt Engineering Master](./Prompt%20Engineering%20Master.skill)** - High-precision prompt optimization, CoT/ToT reasoning, and LLM orchestration
+- **[Neurosymbolic AI Architect](./Neurosymbolic%20AI%20Architect.skill)** - Combining neural networks with symbolic logic
+- **[Autonomous Code Evolution](./Autonomous%20Code%20Evolution.skill)** - Self-healing and evolving codebase patterns
 
 ### 🔒 Security
-- **[Security Audit Master](./security-audit-master.skill)** - Comprehensive security scanning, vulnerability detection, OWASP Top 10 coverage
-- **[Ultimate Memory Orchestrator](./ultimate-memory-orchestrator.skill)** - Secure memory management and data handling
+- **[Security Audit Master](./Security%20Audit%20Master.skill)** - Comprehensive security scanning, vulnerability detection, OWASP Top 10 coverage
+- **[Adaptive Cybersecurity Shield](./Adaptive%20Cybersecurity%20Shield.skill)** - Autonomous threat detection and real-time mitigation
+- **[Ultimate Memory Orchestrator](./Ultimate%20Memory%20Orchestrator.skill)** - Secure memory management and data handling
 
 ### 🧪 Testing & Quality
-- **[Testing & QA Master](./testing-qa-master.skill)** - Unit, integration, E2E testing with Jest, Cypress, Playwright
-- **[Performance Optimization](./performance-optimization.skill)** - Profiling, caching, lazy loading, and speed optimization
+- **[Testing & QA Master](./Testing%20&%20QA%20Master.skill)** - Unit, integration, E2E testing with Jest, Cypress, Playwright
+- **[Performance Optimization](./Performance%20Optimization.skill)** - Profiling, caching, lazy loading, and speed optimization
 
-### 🤝 Collaboration
-- **[Real-time Collaboration](./realtime-collaboration.skill)** - WebSocket, operational transformation, CRDTs, collaborative editing
+### 🤝 Collaboration & UX
+- **[Real-time Collaboration](./Real-time%20Collaboration.skill)** - WebSocket, operational transformation, CRDTs, collaborative editing
+- **[Hyper-Personalized Content Engine](./Hyper-Personalized%20Content%20Engine.skill)** - Dynamic UX adaptation based on user behavior and cognitive load
+
+### 🔬 Specialized Domains
+- **[Intelligent Legal & Compliance](./Intelligent%20Legal%20&%20Compliance.skill)** - AI-powered contract analysis and regulatory frameworks
+- **[Scientific Research Accelerator](./Scientific%20Research%20Accelerator.skill)** - Tools for automating and enhancing scientific discovery
+- **[Personal Health & Wellness](./Personal%20Health%20&%20Wellness.skill)** - Evidence-based health optimization and longevity
+- **[Quantum AI Integration](./Quantum%20AI%20Integration.skill)** - Bridging quantum computing with AI models
+- **[Spatial Computing & XR](./Spatial%20Computing%20&%20XR.skill)** - AR/VR and spatial interface development
+- **[Edge Computing & IoT](./Edge%20Computing%20&%20IoT.skill)** - Distributed intelligence for connected devices
+- **[Bio-Inspired Computing](./Bio-Inspired%20Computing.skill)** - Algorithms modeled after biological systems
+- **[Blockchain & Web3 Developer](./Blockchain%20&%20Web3%20Developer.skill)** - Smart contracts, dApps, and decentralized protocols
 
 ---
 
@@ -74,7 +91,7 @@ Each skill is:
 
 ```bash
 # For a new microservices project:
-cat microservices-architect.skill | pbcopy
+cat "Microservices Architect.skill" | pbcopy
 
 # Then tell Claude:
 "Using the microservices architect skill, help me build a user service 
@@ -187,7 +204,7 @@ We love contributions! Here's how you can help:
 ### Adding New Skills
 
 1. Fork the repository
-2. Create a new skill file: `your-skill-name.skill`
+2. Create a new skill file: `Your Skill Name.skill`
 3. Follow the standard skill format
 4. Add comprehensive examples
 5. Include security considerations
