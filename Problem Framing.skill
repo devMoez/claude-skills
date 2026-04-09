@@ -1,0 +1,103 @@
+# Problem Framing Skill
+**Version:** 1.0.0  
+**Type:** Cognitive Architecture | Strategic Boundary Definition | Team-Focused Systems
+
+## Core Purpose
+To transform ambiguous challenges into precisely defined, solvable problems. Problem Framing focuses on establishing the correct boundaries, identifying the true stakeholders, and ensuring that the *right* problem is being addressed before any resources are committed to a solution.
+
+## Self-Improvement Capabilities
+```yaml
+refinement_engine:
+  - Track "Definition-to-Execution" efficiency
+  - Analyze the "pivot" frequency of projects
+  - Optimize boundary-setting templates based on outcome success
+  - Learn to identify "XY Problems" (solving a symptom instead of a cause)
+  - Evolve the "stakeholder impact" matrix
+  - Remember successful "Problem Reshaping" instances for future pattern matching
+```
+
+## The Framing Framework
+
+### **1. Boundary Definition (Scoping)**
+Establishing what is *not* part of the problem to prevent scope creep and focus energy.
+```python
+class ProblemFramer:
+    """Defines the 'Sandbox' for a solution to play in"""
+    
+    def __init__(self, raw_challenge: str):
+        self.raw_input = raw_challenge
+        self.constraints = []
+        self.non_goals = []
+
+    def set_boundaries(self, scope: dict) -> dict:
+        """Draws the lines in the sand"""
+        return {
+            "core_problem": self.extract_essence(self.raw_input),
+            "in_scope": scope.get('in'),
+            "out_of_scope": scope.get('out'),
+            "success_metric": "Reduction in [Friction Point]"
+        }
+
+    def extract_essence(self, text: str) -> str:
+        """Identifies the single most impactful variable"""
+        # Logic to strip symptoms and find the underlying driver
+        return "The primary driver is [Variable]"
+```
+
+### **2. Stakeholder Empathy (Perspective)**
+Mapping the problem from the viewpoint of everyone it touches.
+```python
+class StakeholderMapper:
+    """Maps the 'Emotional Topography' of a problem"""
+    
+    async def map_impact(self, problem_frame: dict):
+        """Identifies who wins and loses if this problem is solved"""
+        return {
+            "primary_user": {"pain": "High", "gain": "Critical"},
+            "secondary_stakeholder": {"pain": "Low", "gain": "Efficiency"},
+            "implementation_team": {"pain": "Technical Debt", "gain": "Skill Growth"}
+        }
+```
+
+### **3. Validation (The "Is it Real?" Check)**
+Ensuring the problem isn't a mirage or a misinterpretation of data.
+```python
+class FrameValidator:
+    """Checks if the problem is 'Ripe' or 'Rotten'"""
+    
+    def validate_frame(self, frame: dict) -> bool:
+        """Validation = Evidence + Consistency + Value"""
+        return (
+            frame['evidence_score'] > 0.8 and 
+            frame['logical_consistency'] == True and
+            frame['estimated_value'] > self.threshold
+        )
+```
+
+## Cognitive Framing Patterns
+
+### **The "Why-How" Ladder**
+- **Up (Why):** Move towards more abstract, strategic problems.
+- **Down (How):** Move towards more concrete, technical problems.
+- **Goal:** Find the "Sweet Spot" rung where a solution is both feasible and impactful.
+
+### **The "Abstraction Pivot"**
+If a problem is too hard, pivot to a higher abstraction. 
+- *Too hard:* "Make the database 100x faster."
+- *Pivot:* "Reduce the amount of data we need to fetch for the initial render."
+
+## Learning & Adaptation
+
+### **Pivot Analysis**
+The skill tracks how often a project's "Problem Frame" changes during development:
+- **Low Pivot Rate:** Indicates strong initial framing but potential rigidity.
+- **High Pivot Rate:** Indicates weak initial framing or a highly volatile environment.
+
+### **Assumption Auditing**
+Automatically flags frames built on "thin ice" (assumptions with low evidence):
+1.  **Identify Load-Bearing Assumptions:** Which facts, if false, break the frame?
+2.  **Assign Confidence Scores:** Based on data availability.
+3.  **Trigger "Framer Alert":** If a critical assumption has a confidence score < 0.5.
+
+---
+**Status:** Strategic | Precision-Focused | Cognitive

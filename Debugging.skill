@@ -1,0 +1,92 @@
+# Debugging Skill
+**Version:** 1.0.0  
+**Type:** Diagnostic Art | Forensic Analysis | State Reconstruction
+
+## Core Purpose
+To identify, isolate, and resolve complex bugs by reconstructing the system's state at the moment of failure. This skill goes beyond simple "fix-it" mentality, focusing on the forensics of how a bug came to be, ensuring it can never return.
+
+## Self-Improvement Capabilities
+```yaml
+forensic_engine:
+  - Track "Mean-Time-To-Root-Cause" for different bug classes
+  - Analyze the "Regressivity" of fixes (do they break other things?)
+  - Optimize state-capture templates for common failure modes
+  - Learn to identify "Heisenbugs" (bugs that disappear when you look at them)
+  - Evolve the "Diagnostic Tree" based on success history
+  - Remember successful "Forensic Breakthroughs" for pattern matching
+```
+
+## The Debugging Framework
+
+### **1. State Capture & Forensic Replay (The Scene)**
+Reconstructing the exact conditions that led to the failure.
+```python
+class ForensicDebugger:
+    """Captures the system state for reconstruction"""
+    
+    async def capture_state(self, failure_point: str):
+        """Dumps memory, logs, and stack traces at the moment of failure"""
+        return {
+            "stack_trace": self.get_trace(failure_point),
+            "memory_dump": self.sample_heap(),
+            "environmental_variables": self.capture_env(),
+            "the_smoking_gun": "A race condition between [Process A] and [Process B]."
+        }
+```
+
+### **2. Scientific Diagnosis (The Hypothesis)**
+Using the scientific method to isolate the root cause by systematically eliminating variables.
+```python
+class DiagnosticScientist:
+    """Scientific isolation of the bug"""
+    
+    def isolate_variable(self, hypotheses: List[str]):
+        """Systematically tests each hypothesis until the bug is 'cornered'"""
+        for h in hypotheses:
+            if self.run_experiment(h) == "Reproduced":
+                return h
+        return "Anomaly detected; check hardware/network-level signals."
+```
+
+### **3. Root Cause Extraction (The Autopsy)**
+Understanding why the bug was possible in the first place and how to prevent its return.
+```python
+class RootCauseAutopsy:
+    """Ensures the bug is killed at the source"""
+    
+    def extract_root(self, finding: dict):
+        """Moves from 'What failed' to 'Why it was allowed to fail'"""
+        return {
+            "surface_bug": "Variable Overflow",
+            "root_cause": "Lack of input validation in [Specific Module].",
+            "systemic_fix": "Implement a global input validation middleware."
+        }
+```
+
+## Debugging Patterns
+
+### **The "Binary Search" for Bugs**
+When the codebase is large, cut the search area in half repeatedly.
+- *Step 1:* Comment out half the code. Does it still fail?
+- *Step 2:* If yes, the bug is in the active half. If no, it's in the commented half.
+- *Repeat until the specific line is found.*
+
+### **The "Rubber Duck" Synthesis**
+Explain the bug's logic to an external entity (or the rubber duck) to find logical gaps in your own mental model.
+- **Pattern:** Explain "What I think should happen" vs. "What actually happens."
+
+## Learning & Adaptation
+
+### **Regressivity Tracking**
+The skill tracks if a fix introduces new bugs:
+- **High Regressivity:** Suggests a need for better architectural isolation or more comprehensive integration tests.
+- **Low Regressivity:** Suggests the diagnostic process is accurately identifying the root cause.
+
+### **The "Failure Library"**
+Automatically catalogs the "Top 10" failure patterns in the project:
+1.  **Analyze Frequent Bugs:** Are they all "Off-by-one" or "Null-ptr"?
+2.  **Suggest Tooling:** If "Null-ptr" is high, suggest a stricter linter or more defensive coding practices.
+3.  **Cross-Pollinate:** Use these patterns to predict bugs in new code during review.
+
+---
+**Status:** Diagnostic | Forensic-Minded | Root-Cause-Focused

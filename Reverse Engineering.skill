@@ -1,0 +1,89 @@
+# Reverse Engineering Skill
+**Version:** 1.0.0  
+**Type:** Black-Box Analysis | Deconstruction | Protocol Reconstruction
+
+## Core Purpose
+To analyze and understand the internal workings of systems without access to their source code or original documentation. Reverse Engineering is the process of deconstructing a finished product (software, protocol, or system) to determine how its parts work together and how it was made.
+
+## Self-Improvement Capabilities
+```yaml
+deconstruction_engine:
+  - Track "Logic-Discovery-Speed" for new binaries/protocols
+  - Analyze the "Success-to-Reconstruction" ratio
+  - Optimize de-compilation & disassembly patterns
+  - Learn to identify "Obfuscation Patterns" and their bypasses
+  - Evolve the "State-Inference" logic from observed inputs/outputs
+  - Remember successful "Hidden Feature" discoveries for pattern matching
+```
+
+## The Reverse Engineering Framework
+
+### **1. Signal Analysis & Observation (The Outside-In)**
+Observing a system's behavior through its inputs and outputs to infer internal state.
+```python
+class ProtocolSniffer:
+    """Analyzes data flows to infer internal logic"""
+    
+    async def analyze_protocol(self, target_port: int):
+        """Captures and analyzes packets to reconstruct the data structure"""
+        return {
+            "packet_structure": self.detect_fields(),
+            "inferred_logic": "A handshake based on [Specific Cryptographic Pattern].",
+            "the_secret_handshake": "If [Input A] then [Response B]."
+        }
+```
+
+### **2. Disassembly & Static Analysis (The Inside-Out)**
+Breaking down the compiled machine code into human-readable instructions.
+```python
+class Disassembler:
+    """Deconstructs the binary to understand the algorithm"""
+    
+    def deconstruct_binary(self, binary_path: str):
+        """Analyzes the assembly to find the 'True Logic'"""
+        return {
+            "main_loop": self.find_entry_point(),
+            "cryptography": self.detect_aes_or_xor(),
+            "hidden_apis": self.find_undocumented_syscalls()
+        }
+```
+
+### **3. Dynamic Analysis & Hooking (The Interception)**
+Modifying a system's behavior while it's running to observe its reactions.
+```python
+class BehavioralHooker:
+    """Intercepts function calls to observe state changes"""
+    
+    def hook_function(self, target_address: str):
+        """Replaces a function with a 'Spy' version to log inputs/outputs"""
+        return {
+            "intercepted_call": "Function [Address] called with [Value].",
+            "observed_side_effect": "Memory at [Address] was modified."
+        }
+```
+
+## Reverse Engineering Patterns
+
+### **The "Data-Flow" Trace**
+Follow a piece of data from the input all the way through the system.
+- *Pattern:* If input `X` results in output `Y`, where in the code is `X` transformed?
+
+### **The "String-Search" Shortcut**
+Search for error messages, debug strings, or common labels in the binary.
+- **Goal:** Find the logic related to a specific feature quickly.
+
+## Learning & Adaptation
+
+### **Logic Reconstruction Index**
+The skill tracks how accurately it can predict a system's output:
+- **High Accuracy:** Indicates a solid understanding of the internal logic.
+- **Low Accuracy:** Indicates the presence of "hidden" state or complex obfuscation.
+
+### **The "Obfuscation Catalog"**
+Automatically catalogs the "Top 5" obfuscation techniques used in the wild:
+1.  **Analyze Frequent Patterns:** Are they all "XORing" or "Self-modifying code"?
+2.  **Suggest Bypasses:** If "XORing" is frequent, use automated pattern-matching tools.
+3.  **Cross-Pollinate:** Use these bypasses to speed up future reverse engineering tasks.
+
+---
+**Status:** Deconstructive | Forensic-Minded | Protocol-Aware

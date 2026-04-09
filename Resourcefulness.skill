@@ -1,0 +1,87 @@
+# Resourcefulness Skill
+**Version:** 1.0.0  
+**Type:** Meta-Problem Solving | Information Synthesis | Tool Leverage
+
+## Core Purpose
+To achieve high-impact results when faced with constraints: limited data, restricted access, or unknown technologies. Resourcefulness is the art of finding a path through "impossible" obstacles by leveraging obscure tools, synthesize knowledge from disparate fields, and identifying "the simplest thing that could possibly work."
+
+## Self-Improvement Capabilities
+```yaml
+lever_engine:
+  - Track "Information-Gathering-Speed" in new domains
+  - Analyze the "Success-to-Tool" ratio (how much was achieved with how little)
+  - Optimize search & synthesis patterns across technical forums
+  - Learn to identify "Force Multipliers" (tools that solve multiple sub-problems)
+  - Evolve the "Alternative Path" generation logic
+  - Remember successful "MacGyver Solutions" for future pattern matching
+```
+
+## The Resourcefulness Framework
+
+### **1. Information Foraging (The Hunt)**
+Finding the critical 20% of information that solves 80% of the problem.
+```python
+class InfoForager:
+    """Finds the 'Signal' in a sea of technical noise"""
+    
+    async def forage(self, unknown_domain: str):
+        """Scans documentation, forums, and codebases for core patterns"""
+        return {
+            "first_principles": self.identify_core_logic(unknown_domain),
+            "common_pitfalls": self.scrape_troubleshooting_data(),
+            "the_secret_doc": "Hidden/internal wiki or obscure community post."
+        }
+```
+
+### **2. Constraint-Based Design (The Pivot)**
+Turning limitations into creative advantages or finding "unorthodox" bypasses.
+```python
+class ConstraintPivoter:
+    """Turns 'I can't' into 'I can, if...'"""
+    
+    def find_bypass(self, constraint: dict):
+        """Identifies the 'Soft Spot' in a technical restriction"""
+        if constraint['type'] == "No API Access":
+            return "Headless browser scraping or database-level replication."
+        if constraint['type'] == "Legacy System":
+            return "Wrapper/Adapter pattern over raw binary calls."
+        return "Think outside the stack."
+```
+
+### **3. Tool Orchestration (The Lever)**
+Using the tools you *have* to achieve things they weren't strictly designed for.
+```python
+class ToolLeverager:
+    """Gets 10x value out of the current environment"""
+    
+    def synthesize_tools(self, available_tools: List[str]):
+        """Combines simple tools to solve a complex problem"""
+        return "Combine [Tool A] output -> [Script B] -> [Tool C] for [New Capability]."
+```
+
+## Resourcefulness Patterns
+
+### **The "Simpler Bypass" Rule**
+Before building a complex solution, search for a simpler tool that already exists.
+- *Example:* Instead of building a custom real-time sync engine, can we use an existing Redis-based pub/sub system?
+
+### **The "First-Principles" Breakdown**
+When stuck, strip away all abstractions. 
+- *Problem:* "The framework's router is failing."
+- *First-Principles:* "How does the underlying HTTP server handle the raw request string?"
+
+## Learning & Adaptation
+
+### **Success-to-Resource Ratio**
+The skill tracks the "Cost of Solution":
+- **Low Cost:** High resourcefulness (achieved a lot with existing tools/low effort).
+- **High Cost:** Low resourcefulness (required massive new infrastructure or 1000s of lines of code).
+
+### **The "Obscure Knowledge" Index**
+Automatically catalogs "weird but effective" solutions found in the wild:
+1.  **Detect Anomalous Fixes:** When a 5-line script fixes a "major" bug.
+2.  **Analyze Logic:** Why did this work? What was the "hidden" lever?
+3.  **Cross-Pollinate:** Suggest this lever when a similar "impossible" block occurs.
+
+---
+**Status:** Creative | Constraint-Aware | High-Leverage

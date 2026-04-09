@@ -1,0 +1,94 @@
+# Workflow Optimization Skill
+**Version:** 1.0.0  
+**Type:** Efficiency Engineering | Process Automation | Throughput Maximization
+
+## Core Purpose
+To identify, analyze, and eliminate friction in technical and organizational workflows. This skill focuses on the "meta-work"—the steps taken to get work done—ensuring that developers and teams can operate at their theoretical maximum velocity.
+
+## Self-Improvement Capabilities
+```yaml
+optimization_engine:
+  - Track "Time-to-Ship" for different task types
+  - Analyze CI/CD wait times and failure rates
+  - Optimize repetitive manual steps based on frequency
+  - Learn to identify "Shadow Work" (undocumented steps)
+  - Evolve the "Automation-to-Maintenance" ratio
+  - Remember successful "Bottleneck Breaking" patterns
+```
+
+## The Optimization Framework
+
+### **1. Workflow Auditing (The Map)**
+Mapping the current path from "Idea" to "Production".
+```python
+class WorkflowAuditor:
+    """Identifies the 'Traffic Jams' in the delivery pipeline"""
+    
+    async def audit_stream(self, project_path: str):
+        """Measures the latency of every step in the workflow"""
+        steps = ["Coding", "Review", "CI", "Staging", "Deploy"]
+        latencies = await self.measure_durations(steps)
+        
+        return {
+            "bottleneck": self.find_max_latency(latencies),
+            "idle_time": self.calculate_wait_times(steps),
+            "rework_rate": self.measure_pr_rejects()
+        }
+```
+
+### **2. Friction Reduction (The Grease)**
+Automating the "boring stuff" and simplifying complex handoffs.
+```python
+class FrictionReducer:
+    """Automates manual interventions and simplifies processes"""
+    
+    def suggest_automation(self, manual_steps: List[str]):
+        """Proposes tools or scripts for frequent manual tasks"""
+        return [
+            {"step": "Schema Migration", "tool": "Prisma + GitHub Actions"},
+            {"step": "Env Syncing", "tool": "Infisical / Doppler"},
+            {"step": "Release Notes", "tool": "Changesets / Auto"}
+        ]
+```
+
+### **3. Throughput Monitoring (The Dashboard)**
+Ensuring that optimizations actually result in faster delivery.
+```python
+class VelocityMonitor:
+    """Checks if the team is actually moving faster or just busier"""
+    
+    def check_health(self, metrics: dict) -> bool:
+        """Health = High Velocity + Low Burnout + High Quality"""
+        return (
+            metrics['lead_time'] < self.target and 
+            metrics['change_failure_rate'] < 0.05 and
+            metrics['dev_satisfaction'] > 4.0
+        )
+```
+
+## Optimization Patterns
+
+### **The "Automate or Eliminate" Filter**
+Before automating a step, ask: "Do we even need this step?"
+- *Example:* Instead of automating a complex manual QA sign-off, can we implement better automated integration tests to eliminate the need for manual sign-off?
+
+### **The "Context Switch" Tax**
+The skill tracks how many times a developer has to jump between tools:
+- **High Tax:** Using 5+ tools to complete a single PR.
+- **Optimization:** Consolidating feedback into GitHub/GitLab or using CLI integrations.
+
+## Learning & Adaptation
+
+### **Tool Fatigue Tracking**
+Monitors the adoption of new "optimizations":
+- **Low Adoption:** Optimization might be too complex or solve the wrong problem.
+- **High Friction:** Optimization requires too much maintenance.
+
+### **The "Golden Path" Evolution**
+Automatically suggests the "Golden Path" for new projects:
+1.  **Analyze Successful Past Projects:** Which workflows had the lowest lead time?
+2.  **Generate Scaffold:** A pre-configured set of tools and CI/CD templates.
+3.  **Iterate:** Update the scaffold as better tools or practices emerge.
+
+---
+**Status:** Efficiency-Driven | Process-Aware | Throughput-Focused

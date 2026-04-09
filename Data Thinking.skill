@@ -1,0 +1,95 @@
+# Data Thinking Skill
+**Version:** 1.0.0  
+**Type:** Strategic Data Literacy | Value Architecture | Evidence-Based Logic
+
+## Core Purpose
+To treat data not as a storage byproduct, but as the primary architectural material. Data Thinking focuses on the *strategy* of data: what to collect, how to derive meaning from it, and identifying the high-impact "missing" data that traditional analysis misses.
+
+## Self-Improvement Capabilities
+```yaml
+thinking_engine:
+  - Track "Data-to-Decision" conversion efficiency
+  - Analyze the "Signal-to-Noise" ratio of current datasets
+  - Optimize data architectures for "Question-Ready" states
+  - Learn to identify "Data Silos" before they become bottlenecks
+  - Evolve the "Ethical Impact" assessment based on outcomes
+  - Remember successful "Hidden Pattern" discoveries for future reuse
+```
+
+## The Data Framework
+
+### **1. Data Strategy (The Blueprint)**
+Defining what data is actually needed to answer the most important questions.
+```python
+class DataStrategist:
+    """Focuses on the 'Why' of data collection"""
+    
+    def define_needs(self, goal: str) -> dict:
+        """Determines the 'Minimum Viable Data' for a strategic goal"""
+        return {
+            "required_signals": ["User Latency", "Conversion Path", "Error Frequency"],
+            "irrelevant_noise": ["Raw Log Bloat", "Unfiltered Geo-Data"],
+            "the_missing_question": "Why did 40% of users drop at Step 3 without an error?"
+        }
+```
+
+### **2. Value Extraction (The Mine)**
+Turning raw data points into actionable insights using structured logic.
+```python
+class InsightExtractor:
+    """Moves from 'What happened' to 'Why it matters'"""
+    
+    async def extract_value(self, dataset: Any):
+        """Processes signals to find the 'High Value' intersections"""
+        # Step 1: Filter Noise
+        # Step 2: Correlate across silos (e.g., Support tickets vs. Code changes)
+        # Step 3: Synthesis
+        return {
+            "finding": "Product performance degradation correlates with [Specific Dependency] update.",
+            "action": "Revert dependency or implement [Specific Optimization].",
+            "potential_gain": "15% increase in retention."
+        }
+```
+
+### **3. Integrity & Ethics (The Compass)**
+Ensuring the data is not just accurate, but representative and ethical.
+```python
+class DataEthicsAudit:
+    """Checks for bias, representation, and privacy risks"""
+    
+    def audit_set(self, data: dict) -> bool:
+        """Audit = Bias Check + Privacy Check + Accuracy Check"""
+        return (
+            data['diversity_score'] > 0.9 and 
+            data['privacy_compliance'] == "Strict" and
+            data['noise_threshold'] < 0.2
+        )
+```
+
+## Data Thinking Patterns
+
+### **The "Counter-Data" Check**
+When seeing a clear trend, look for the data that *disproves* it.
+- *Example:* "Users love the new feature (usage is up)." 
+- *Counter-Data:* "How many support tickets are related to the new feature?"
+
+### **The "Question-First" Architecture**
+Instead of storing everything and asking later, design the schema based on the questions it needs to answer.
+- **Legacy:** `id, user_id, timestamp, data_blob`
+- **Data-Thought:** `id, session_id, friction_event_type, load_bearing_context`
+
+## Learning & Adaptation
+
+### **Silo Detection**
+The skill tracks how often a question requires data from multiple sources:
+- **High Silo Count:** Suggests a need for a unified data layer or better API design.
+- **Low Correlation:** Suggests we are collecting the wrong signals in one of the silos.
+
+### **The "Missing Signal" Hunt**
+If a problem is unexplainable with current data, the skill:
+1.  **Identifies the Data Gap:** What information would make this clear?
+2.  **Suggests Collection Points:** Where can we "tap" the system for this signal?
+3.  **Evaluates Collection Cost:** Is the new signal worth the storage/latency cost?
+
+---
+**Status:** Strategic | Logic-First | Data-Literate

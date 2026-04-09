@@ -12,6 +12,7 @@ Complete reference guide for all available skills.
 - [Testing Skills](#testing-skills)
 - [DevOps Skills](#devops-skills)
 - [Collaboration Skills](#collaboration-skills)
+- [Innovation & Discovery Skills](#innovation-discovery-skills)
 
 ---
 
@@ -328,6 +329,94 @@ Complete reference guide for all available skills.
 - Socket.io, Yjs
 - WebSocket, WebRTC
 - Redis for sync
+
+---
+
+## Innovation & Discovery Skills
+### Problem Framing
+**File:** `Problem Framing.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Advanced
+
+**What it covers:**
+- Strategic boundary definition (Scoping)
+- Stakeholder empathy & perspective mapping
+- Abstraction pivots & Why-How laddering
+- XY Problem identification
+- Assumption auditing
+
+### Workflow Optimization
+**File:** `Workflow Optimization.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Intermediate to Advanced
+
+**What it covers:**
+- Throughput maximization & Bottleneck analysis
+- Friction reduction through automation
+- Velocity monitoring & Lead time analysis
+- Context switch tax reduction
+- Golden Path evolution
+
+### Data Thinking
+**File:** `Data Thinking.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Advanced
+
+**What it covers:**
+- Strategic data literacy & Value extraction
+- Missing signal identification
+- Data ethics & representation auditing
+- Signal-to-Noise ratio optimization
+- Question-First architecture
+
+### Resourcefulness
+**File:** `Resourcefulness.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Intermediate (Meta-Skill)
+
+**What it covers:**
+- Information foraging in unknown domains
+- Constraint-based design & Pivot logic
+- Unorthodox tool leverage (MacGyver solutions)
+- First-Principles breakdown
+- Alternative path generation
+
+### Debugging
+**File:** `Debugging.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Intermediate to Advanced
+
+**What it covers:**
+- Forensic analysis & State reconstruction
+- Scientific diagnosis (Hypothesis testing)
+- Root cause autopsy
+- Binary search for bugs
+- Regressivity tracking
+
+### Reverse Engineering
+**File:** `Reverse Engineering.skill`  
+**Version:** 1.0.0  
+**Difficulty:** Expert
+
+**What it covers:**
+- Black-box analysis & Protocol reconstruction
+- Static analysis & Disassembly
+- Dynamic analysis & Function hooking
+- Obfuscation pattern recognition
+- State-Inference logic
+
+---
+
+## Skill Combinations
+
+- High technical debt with low team morale
+- Identifying product-market fit
+- Strategic roadmap planning
+
+**Tech stack:**
+- Python (Discovery Agents)
+- YAML (Cognitive Templates)
+- NLP (Sentiment & Pattern Analysis)
 
 ---
 

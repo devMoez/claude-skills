@@ -47,8 +47,16 @@ Each skill is:
 - **[Neurosymbolic AI Architect](./Neurosymbolic%20AI%20Architect.skill)** - Combining neural networks with symbolic logic
 - **[Autonomous Code Evolution](./Autonomous%20Code%20Evolution.skill)** - Self-healing and evolving codebase patterns
 
-### 🔒 Security
-- **[Security Audit Master](./Security%20Audit%20Master.skill)** - Comprehensive security scanning, vulnerability detection, OWASP Top 10 coverage
+### 💡 Innovation & Strategy
+- **[Problem Framing](./Problem%20Framing.skill)** - Strategic boundary definition and complex challenge scoping
+- **[Workflow Optimization](./Workflow%20Optimization.skill)** - Process automation and throughput maximization
+- **[Data Thinking](./Data%20Thinking.skill)** - Strategic data literacy and value architecture
+- **[Resourcefulness](./Resourcefulness.skill)** - Meta-problem solving and unorthodox tool leverage
+
+### 🔍 Security & Diagnostics
+- **[Security Audit Master](./Security%20Audit%20Master.skill)** - Comprehensive security scanning and vulnerability detection
+- **[Debugging](./Debugging.skill)** - Forensic analysis and systemic root-cause resolution
+- **[Reverse Engineering](./Reverse%20Engineering.skill)** - Black-box analysis and protocol reconstruction
 - **[Adaptive Cybersecurity Shield](./Adaptive%20Cybersecurity%20Shield.skill)** - Autonomous threat detection and real-time mitigation
 - **[Ultimate Memory Orchestrator](./Ultimate%20Memory%20Orchestrator.skill)** - Secure memory management and data handling
 
@@ -264,10 +272,10 @@ If you find these skills helpful, please consider giving us a star! ⭐
 
 ## 📬 Contact
 
+- **GitHub:** [devMoez](https://github.com/devMoez)
 - **Issues:** [GitHub Issues](https://github.com/devMoez/claude-skills/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/devMoez/claude-skills/discussions)
-- **Email:** moezfsdx942@gmail.com
-- **Twitter:** [@am_moezzz](https://twitter.com/am_moezzz)
+- **Email:** devMoez@example.com
 
 ---
 
