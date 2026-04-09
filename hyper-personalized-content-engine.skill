@@ -1,0 +1,85 @@
+# Hyper-Personalized Content Engine Skill
+**Version:** 1.0.0  
+**Type:** Self-Improving | UX Optimization | Behavioral AI
+
+## Core Purpose
+Designing AI systems that dynamically adapt user interfaces, content delivery, and interactive experiences in real-time based on individual behavioral patterns, cognitive load, and intent.
+
+## Self-Improvement Engine
+```yaml
+learning_engine:
+  - Optimize Content-User matching scores
+  - Learn from micro-interactions (hover time, scroll depth)
+  - Adapt UI layouts based on accessibility needs and device context
+  - Evolve recommendation algorithms (Collaborative vs Content-based)
+  - Remember high-conversion design patterns for specific cohorts
+  - Map user "frustration" patterns to trigger proactive assistance
+```
+
+## Orchestration Architectures
+
+### **Real-time Behavioral Tracker**
+```typescript
+class BehavioralOrchestrator {
+  /**
+   * Updates user profile and adapts UI state in real-time
+   */
+  async onUserAction(event: UserEvent): Promise<UIAdjustment> {
+    const intent = await this.predictIntent(event);
+    const cognitiveLoad = this.estimateCognitiveLoad(event);
+    
+    if (cognitiveLoad > 0.8) {
+      return { type: 'SIMPLIFY_UI', priority: 'HIGH' };
+    }
+    
+    return {
+      type: 'INJECT_CONTENT',
+      payload: await this.getPersonalizedContent(intent)
+    };
+  }
+
+  private estimateCognitiveLoad(e: UserEvent): number {
+    // Track rapid clicking, erratic scrolling, or long pauses
+    return 0.5; // Normalized score
+  }
+}
+```
+
+### **Dynamic Content Generator**
+```python
+class PersonalizationEngine:
+    """Generates context-aware content variants"""
+    
+    def __init__(self, user_profiles: Dict):
+        self.profiles = user_profiles
+        
+    def generate_copy(self, base_text: str, user_id: str) -> str:
+        """Adapts tone and complexity based on user expertise level"""
+        profile = self.profiles.get(user_id)
+        expertise = profile.get('expertise', 'novice')
+        
+        if expertise == 'expert':
+            return self.add_technical_depth(base_text)
+        elif expertise == 'novice':
+            return self.simplify_terminology(base_text)
+        return base_text
+
+    def add_technical_depth(self, text: str) -> str:
+        # Swap general terms for precise technical jargon
+        return text.replace("easy to use", "API-first with low-latency endpoints")
+```
+
+## Learning & Adaptation
+Tracks:
+- Engagement lift across different UI variations
+- Retention rates vs personalization intensity
+- Performance of dynamic content caching
+- User sentiment via interaction markers
+
+Adapts by:
+- Automatically A/B testing new layout configurations
+- Scaling the "intensity" of recommendations to avoid the "filter bubble" effect
+- Identifying and promoting high-performing "micro-moments" in the user journey
+
+---
+**Status:** Production Ready | Self-Improving | Context-Aware
