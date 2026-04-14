@@ -1,92 +1,87 @@
 # Debugging Skill
-**Version:** 1.0.0  
-**Type:** Diagnostic Art | Forensic Analysis | State Reconstruction
+**Version:** 1.0.1  
+**Type:** Diagnostic Practice | Forensic Investigation | State Reconstruction
 
 ## Core Purpose
-To identify, isolate, and resolve complex bugs by reconstructing the system's state at the moment of failure. This skill goes beyond simple "fix-it" mentality, focusing on the forensics of how a bug came to be, ensuring it can never return.
+To detect, isolate, and fix complex bugs by rebuilding the system state at the exact point of failure. This approach goes beyond quick fixes, focusing on understanding how the issue originated so it cannot occur again.
 
 ## Self-Improvement Capabilities
-```yaml
-forensic_engine:
-  - Track "Mean-Time-To-Root-Cause" for different bug classes
-  - Analyze the "Regressivity" of fixes (do they break other things?)
-  - Optimize state-capture templates for common failure modes
-  - Learn to identify "Heisenbugs" (bugs that disappear when you look at them)
-  - Evolve the "Diagnostic Tree" based on success history
-  - Remember successful "Forensic Breakthroughs" for pattern matching
-```
+    forensic_engine:
+      - Monitor "Mean-Time-To-Root-Cause" across various bug categories
+      - Evaluate "Fix Regressivity" (whether fixes introduce new issues)
+      - Refine state-capture templates for recurring failure scenarios
+      - Learn to recognize "Heisenbugs" (issues that disappear when inspected)
+      - Improve the "Diagnostic Tree" based on past debugging outcomes
+      - Store successful "Forensic Breakthroughs" for future pattern matching
 
 ## The Debugging Framework
 
 ### **1. State Capture & Forensic Replay (The Scene)**
-Reconstructing the exact conditions that led to the failure.
-```python
-class ForensicDebugger:
-    """Captures the system state for reconstruction"""
-    
-    async def capture_state(self, failure_point: str):
-        """Dumps memory, logs, and stack traces at the moment of failure"""
-        return {
-            "stack_trace": self.get_trace(failure_point),
-            "memory_dump": self.sample_heap(),
-            "environmental_variables": self.capture_env(),
-            "the_smoking_gun": "A race condition between [Process A] and [Process B]."
-        }
-```
+Rebuilding the exact environment and conditions during failure.
+
+    class ForensicDebugger:
+        """Captures system state for later reconstruction"""
+        
+        async def capture_state(self, failure_point: str):
+            """Collects memory data, logs, and stack traces at failure time"""
+            return {
+                "stack_trace": self.get_trace(failure_point),
+                "memory_snapshot": self.sample_heap(),
+                "env_variables": self.capture_env(),
+                "key_indicator": "Possible race condition between [Process A] and [Process B]."
+            }
 
 ### **2. Scientific Diagnosis (The Hypothesis)**
-Using the scientific method to isolate the root cause by systematically eliminating variables.
-```python
-class DiagnosticScientist:
-    """Scientific isolation of the bug"""
-    
-    def isolate_variable(self, hypotheses: List[str]):
-        """Systematically tests each hypothesis until the bug is 'cornered'"""
-        for h in hypotheses:
-            if self.run_experiment(h) == "Reproduced":
-                return h
-        return "Anomaly detected; check hardware/network-level signals."
-```
+Applying structured testing to isolate the root cause step by step.
+
+    class DiagnosticScientist:
+        """Handles systematic bug investigation"""
+        
+        def isolate_variable(self, hypotheses: List[str]):
+            """Tests each hypothesis until the issue is reproduced"""
+            for h in hypotheses:
+                if self.run_experiment(h) == "Reproduced":
+                    return h
+            return "Unexpected anomaly; investigate deeper system-level signals."
 
 ### **3. Root Cause Extraction (The Autopsy)**
-Understanding why the bug was possible in the first place and how to prevent its return.
-```python
-class RootCauseAutopsy:
-    """Ensures the bug is killed at the source"""
-    
-    def extract_root(self, finding: dict):
-        """Moves from 'What failed' to 'Why it was allowed to fail'"""
-        return {
-            "surface_bug": "Variable Overflow",
-            "root_cause": "Lack of input validation in [Specific Module].",
-            "systemic_fix": "Implement a global input validation middleware."
-        }
-```
+Understanding why the failure occurred and preventing future recurrence.
+
+    class RootCauseAutopsy:
+        """Eliminates bugs from their origin"""
+        
+        def extract_root(self, finding: dict):
+            """Transitions from symptom to root cause"""
+            return {
+                "surface_issue": "Variable Overflow",
+                "root_cause": "Missing input validation in [Specific Module].",
+                "systemic_solution": "Introduce centralized input validation middleware."
+            }
 
 ## Debugging Patterns
 
 ### **The "Binary Search" for Bugs**
-When the codebase is large, cut the search area in half repeatedly.
-- *Step 1:* Comment out half the code. Does it still fail?
-- *Step 2:* If yes, the bug is in the active half. If no, it's in the commented half.
-- *Repeat until the specific line is found.*
+For large codebases, reduce the search space progressively.
+- Step 1: Disable half the code. Does the issue persist?
+- Step 2: If yes → bug is in the active half. If no → it's in the disabled half.
+- Repeat until the exact line is identified.
 
 ### **The "Rubber Duck" Synthesis**
-Explain the bug's logic to an external entity (or the rubber duck) to find logical gaps in your own mental model.
-- **Pattern:** Explain "What I think should happen" vs. "What actually happens."
+Explain the problem to an external entity to uncover logical gaps.
+- Pattern: Compare "Expected behavior" vs "Actual behavior"
 
 ## Learning & Adaptation
 
 ### **Regressivity Tracking**
-The skill tracks if a fix introduces new bugs:
-- **High Regressivity:** Suggests a need for better architectural isolation or more comprehensive integration tests.
-- **Low Regressivity:** Suggests the diagnostic process is accurately identifying the root cause.
+Monitors whether fixes introduce new issues:
+- High Regressivity: Indicates need for better isolation or stronger testing
+- Low Regressivity: Suggests accurate root cause identification
 
 ### **The "Failure Library"**
-Automatically catalogs the "Top 10" failure patterns in the project:
-1.  **Analyze Frequent Bugs:** Are they all "Off-by-one" or "Null-ptr"?
-2.  **Suggest Tooling:** If "Null-ptr" is high, suggest a stricter linter or more defensive coding practices.
-3.  **Cross-Pollinate:** Use these patterns to predict bugs in new code during review.
+Maintains a list of the most frequent failure patterns:
+1. Analyze Common Bugs: e.g., off-by-one errors or null pointers  
+2. Recommend Tools: e.g., stricter linters or defensive coding practices  
+3. Apply Insights: Predict similar issues during code reviews  
 
 ---
-**Status:** Diagnostic | Forensic-Minded | Root-Cause-Focused
+**Status:** Diagnostic | Forensic-Oriented | Root-Cause Driven
